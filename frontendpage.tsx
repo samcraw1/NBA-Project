@@ -1,16 +1,27 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 //import the nba endpoint
 //import other things
 
 function FrontEnd(){
 const [searchquery, setSetSearchQuery] = useState("");
+const [players, setPlayers] = useState<{ playerName: string; pts: number }[]>([]);
+
+
 const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 }
 
-const players = [];
+useEffect(() => {
+  fetch("/api/players")
+    .then((response) => response.json())
+    .then((data) => setPlayers(data));
+}, []);
 
-const searchInput = players.filter((p) => p.playerName.lowerCase().includes(searchquery.toLowerCase())).map((p) => ({ name: p.playerName, pts: p.pts}));
+
+
+
+
+const searchInput = players.filter((p) => p.playerName.toLowerCase().includes(searchquery.toLowerCase())).map((p) => ({ name: p.playerName, pts: p.pts}));
 
 
 return ( 

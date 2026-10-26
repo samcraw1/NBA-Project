@@ -19,6 +19,8 @@
   },
   "homepage": "https://github.com/samcraw1/NBA-Project#readme",
   "dependencies": {
+    "@types/express": "^5.0.6",
+    "express": "^5.3.0",
     "nba-api-ts": "^0.1.11",
     "react": "^19.3.1"
   },
