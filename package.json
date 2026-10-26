@@ -1,0 +1,29 @@
+{
+  "name": "nba-project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/samcraw1/NBA-Project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/samcraw1/NBA-Project/issues"
+  },
+  "homepage": "https://github.com/samcraw1/NBA-Project#readme",
+  "dependencies": {
+    "nba-api-ts": "^0.1.11",
+    "react": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "typescript": "^7.0.2"
+  }
+}
