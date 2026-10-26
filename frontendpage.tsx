@@ -4,6 +4,9 @@ import React, { useState } from "react";
 
 function FrontEnd(){
 const [searchquery, setSetSearchQuery] = useState("");
+const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+}
 
 const players = [];
 
@@ -14,16 +17,30 @@ return (
 
     <div>
         <h2>Ball is Life</h2>
+        <form onSubmit={handleSubmit}>
         <input
         type= "text"
         placeholder="enter NBA Players Name"
         value={searchquery}
         onChange={(event) => setSetSearchQuery(event.target.value)}
         />
+        <button>
+        Search
+        </button>
+    </form>
+    {searchInput.length > 0 ? (
+        <ul>
+            {searchInput.map((item) => (
+                <li key={item.name}>
+                    {item.name}: {item.pts} pts
+                </li>
+            ))}
+        </ul>
+) : (
+    <p> no players found</p>
+    )}
     </div>
-
-) 
-
+);
 }
 
 
