@@ -110,6 +110,21 @@ function FrontEnd() {
   const [gamesLoading, setGamesLoading] = useState(true);
   const [gamesError, setGamesError] = useState(false);
   const [gamesExpanded, setGamesExpanded] = useState(false);
+
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    try {
+      const saved = localStorage.getItem("theme");
+      if (saved === "dark" || saved === "light") return saved;
+    } catch {}
+    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      localStorage.setItem("theme", theme);
+    } catch {}
+  }, [theme]);
   const TOP_GAMES = 6;
   const [view, setView] = useState<"box" | "plays">("box");
   const [plays, setPlays] = useState<Play[]>([]);
@@ -205,6 +220,13 @@ function FrontEnd() {
   return (
     <main className="page">
       <header className="masthead">
+        <button
+          type="button"
+          className="theme-toggle"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          {theme === "dark" ? "Light mode" : "Dark mode"}
+        </button>
         <h1>Ball is Life</h1>
         <p>Points from today's games, straight from NBA.com.</p>
       </header>

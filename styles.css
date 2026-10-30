@@ -4,7 +4,33 @@
   --paint: #f4f6fb;
   --muted: #a3b3e0;
   --ball: #ff7a1f;
+  --line: rgba(244, 246, 251, 0.18);
+  --line-strong: rgba(244, 246, 251, 0.3);
+  --line-faint: rgba(244, 246, 251, 0.1);
   --radius: 4px;
+}
+
+:root[data-theme="light"] {
+  --court: #e8edf9;
+  --key: #ffffff;
+  --paint: #0e2461;
+  --muted: #4a5d96;
+  --ball: #d9480f;
+  --line: rgba(14, 36, 97, 0.15);
+  --line-strong: rgba(14, 36, 97, 0.3);
+  --line-faint: rgba(14, 36, 97, 0.08);
+}
+
+.theme-toggle {
+  float: right;
+  background: transparent;
+  color: var(--paint);
+  border: 2px solid var(--line-strong);
+}
+
+.theme-toggle:hover {
+  background: transparent;
+  border-color: var(--ball);
 }
 
 * {
@@ -131,7 +157,7 @@ button:focus-visible {
   align-items: baseline;
   column-gap: 1rem;
   padding: 0.7rem 0 0.8rem;
-  border-top: 1px solid rgba(244, 246, 251, 0.18);
+  border-top: 1px solid var(--line);
 }
 
 .name {
@@ -206,7 +232,7 @@ button:focus-visible {
 .tab {
   background: transparent;
   color: var(--muted);
-  border: 2px solid rgba(244, 246, 251, 0.25);
+  border: 2px solid var(--line-strong);
 }
 
 .tab:hover {
@@ -232,7 +258,7 @@ button:focus-visible {
   grid-template-columns: 5.5rem 1fr auto;
   gap: 0.75rem;
   padding: 0.5rem 0;
-  border-top: 1px solid rgba(244, 246, 251, 0.18);
+  border-top: 1px solid var(--line);
 }
 
 .when {
@@ -250,7 +276,7 @@ button:focus-visible {
   padding: 0.75rem;
   background: transparent;
   color: var(--paint);
-  border: 2px solid rgba(244, 246, 251, 0.25);
+  border: 2px solid var(--line-strong);
 }
 
 .expand:hover {
@@ -265,7 +291,7 @@ button:focus-visible {
   font: inherit;
   text-align: left;
   text-decoration: underline;
-  text-decoration-color: rgba(244, 246, 251, 0.35);
+  text-decoration-color: var(--line-strong);
   text-underline-offset: 0.25em;
 }
 
@@ -372,7 +398,7 @@ button:focus-visible {
   grid-column: 1 / -1;
   height: 4px;
   margin-top: 0.4rem;
-  background: rgba(244, 246, 251, 0.1);
+  background: var(--line-faint);
 }
 
 .bar {
