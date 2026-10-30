@@ -1,0 +1,412 @@
+:root {
+  --court: #16337f;
+  --key: #0e2461;
+  --paint: #f4f6fb;
+  --muted: #a3b3e0;
+  --ball: #ff7a1f;
+  --radius: 4px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--court);
+  color: var(--paint);
+  font-family: "Barlow", system-ui, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.5;
+}
+
+.page {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 2.5rem 1rem 4rem;
+}
+
+.masthead {
+  padding-bottom: 1.25rem;
+  border-bottom: 3px solid var(--paint);
+  margin-bottom: 2.5rem;
+}
+
+.masthead h1 {
+  margin: 0;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  font-size: clamp(3.5rem, 15vw, 7.5rem);
+  line-height: 0.9;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+}
+
+.masthead p {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+}
+
+section {
+  background: var(--key);
+  border-radius: var(--radius);
+  padding: 1.5rem 1.25rem 1.75rem;
+  margin-bottom: 1.5rem;
+}
+
+h2 {
+  margin: 0 0 1rem;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 600;
+  font-size: 1.75rem;
+  line-height: 1.1;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+form {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0.25rem;
+  background: transparent;
+  color: var(--paint);
+  border: 0;
+  border-bottom: 2px solid var(--paint);
+  border-radius: 0;
+  font: inherit;
+  font-size: 1.25rem;
+}
+
+input::placeholder {
+  color: var(--muted);
+}
+
+input:focus-visible {
+  outline: none;
+  border-bottom-color: var(--ball);
+}
+
+button {
+  padding: 0.6rem 1.1rem;
+  background: var(--ball);
+  color: var(--key);
+  border: 0;
+  border-radius: var(--radius);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--paint);
+}
+
+button:focus-visible {
+  outline: 3px solid var(--paint);
+  outline-offset: 2px;
+}
+
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  column-gap: 1rem;
+  padding: 0.7rem 0 0.8rem;
+  border-top: 1px solid rgba(244, 246, 251, 0.18);
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.games {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.75rem;
+}
+
+.game {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--court);
+  color: var(--paint);
+  text-align: left;
+  border: 2px solid transparent;
+}
+
+.game:hover {
+  background: var(--court);
+  border-color: var(--muted);
+}
+
+.game[aria-pressed="true"] {
+  border-color: var(--ball);
+}
+
+.team {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.logo {
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  object-fit: contain;
+}
+
+.tricode {
+  flex: 1;
+}
+
+.score {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.status {
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.tab {
+  background: transparent;
+  color: var(--muted);
+  border: 2px solid rgba(244, 246, 251, 0.25);
+}
+
+.tab:hover {
+  background: transparent;
+  color: var(--paint);
+}
+
+.tab[aria-pressed="true"] {
+  color: var(--paint);
+  border-color: var(--ball);
+}
+
+.plays {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 26rem;
+  overflow-y: auto;
+}
+
+.plays li {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr auto;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid rgba(244, 246, 251, 0.18);
+}
+
+.when {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.play-score {
+  font-variant-numeric: tabular-nums;
+}
+
+.expand {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: transparent;
+  color: var(--paint);
+  border: 2px solid rgba(244, 246, 251, 0.25);
+}
+
+.expand:hover {
+  background: transparent;
+  border-color: var(--ball);
+}
+
+.name-link {
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: rgba(244, 246, 251, 0.35);
+  text-underline-offset: 0.25em;
+}
+
+.name-link:hover {
+  background: none;
+  text-decoration-color: var(--ball);
+}
+
+.card {
+  display: grid;
+  grid-template-columns: 11rem 1fr;
+  column-gap: 1.25rem;
+  align-items: start;
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem 1.25rem;
+  background: var(--court);
+  border-radius: var(--radius);
+}
+
+.card-photo {
+  grid-row: 1 / span 2;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1040 / 760;
+  object-fit: cover;
+  background: var(--key);
+  border-radius: var(--radius);
+}
+
+.thumb {
+  flex: none;
+  width: 3.4rem;
+  height: 2.5rem;
+  object-fit: cover;
+  object-position: top;
+  background: var(--court);
+  border-radius: var(--radius);
+}
+
+@media (max-width: 36rem) {
+  .card {
+    grid-template-columns: 1fr;
+  }
+
+  .card-photo {
+    grid-row: auto;
+    max-width: 14rem;
+    margin-bottom: 0.75rem;
+  }
+}
+
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.card-head h3 {
+  margin: 0;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  gap: 1rem 1.25rem;
+  margin: 0;
+}
+
+.stats dt {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.stats dd {
+  margin: 0;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  font-size: 1.75rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.pos {
+  margin-left: 0.6rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.pts {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  font-size: 2.25rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.track {
+  grid-column: 1 / -1;
+  height: 4px;
+  margin-top: 0.4rem;
+  background: rgba(244, 246, 251, 0.1);
+}
+
+.bar {
+  display: block;
+  height: 100%;
+  background: var(--ball);
+  transform-origin: left;
+  animation: grow 0.6s ease-out;
+}
+
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.note {
+  margin: 0;
+  color: var(--muted);
+}
+
+.note.error {
+  color: var(--paint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    animation: none;
+  }
+}
+
+@media (max-width: 30rem) {
+  form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
