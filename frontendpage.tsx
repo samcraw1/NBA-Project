@@ -7,8 +7,18 @@ const [searchquery, setSetSearchQuery] = useState("");
 const [players, setPlayers] = useState<{ playerName: string; pts: number }[]>([]);
 
 
+const [gameId, setGameId] = useState("");
+const [gamePlayers, setGamePlayers] = useState<{ playerName: string; pts: number; pos: string }[]>([]);
+
 const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+}
+
+const handleGameSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetch(`/api/games/${gameId}`)
+      .then((response) => response.json())
+      .then((data) => setGamePlayers(data));
 }
 
 useEffect(() => {
@@ -50,6 +60,24 @@ return (
 ) : (
     <p> no players found</p>
     )}
+
+    <h3>Game box score</h3>
+    <form onSubmit={handleGameSubmit}>
+        <input
+        type="text"
+        placeholder="enter game ID"
+        value={gameId}
+        onChange={(event) => setGameId(event.target.value)}
+        />
+        <button>Load</button>
+    </form>
+    <ul>
+        {gamePlayers.map((p) => (
+            <li key={p.playerName}>
+                {p.playerName} ({p.pos}): {p.pts} pts
+            </li>
+        ))}
+    </ul>
     </div>
 );
 }
