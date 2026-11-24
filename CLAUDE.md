@@ -8,9 +8,9 @@ This is a learning-first project. Technical understanding is more important than
 
 ## Current State
 
-- Existing React/TypeScript frontend using Vite.
+- React/TypeScript frontend using Vite, in `src/` (componentized dashboard with hash routing, dark/light themes, and "coming soon" analytics placeholders). Backend gaps it needs are listed in `FRONTEND_REQUIREMENTS.md`.
 - Original Express/TypeScript backend in `server.ts`, using `nba-api-ts`.
-- Python FastAPI replacement drafted with `nba_api` and `ThreadPoolExecutor`. Verify its location, integration, and runtime behavior before assuming the migration is complete.
+- Python FastAPI replacement in `server.py` (root) using `nba_api` and `ThreadPoolExecutor`. All five routes are implemented and were tested against live NBA data, including the 404 and 422 cases, and through the Vite proxy. The full UI was also confirmed working against it in a browser. The legacy Express `server.ts` is still in the repo.
 - Dashboard displays today's games, top scorers, player search, player cards, box scores, and play-by-play.
 - Current data is fetched on demand from NBA.com. Historical persistence, automated ETL, and AWS infrastructure are planned, not confirmed implemented.
 
@@ -57,7 +57,7 @@ Cloud target: S3 raw and processed datasets, private RDS PostgreSQL, AWS-hosted 
 Complete objectives incrementally. Do not jump ahead without a reason.
 
 ### 1. Data extraction (current priority)
-- [ ] Verify the Python FastAPI endpoints against the existing frontend.
+- [x] Verify the Python FastAPI endpoints against the existing frontend.
 - [ ] Create standalone extraction scripts, independent of HTTP requests.
 - [ ] Retrieve historical league game logs, player information, and teams using `nba_api.stats`.
 - [ ] Start with one season; save datasets as CSV or JSON locally.
@@ -122,7 +122,7 @@ Adapt to the existing repository; do not reorganize working files unnecessarily.
 
 ```text
 NBA-Project/
-  frontendpage.tsx
+  src/                      # React frontend
   server.ts                 # Legacy Express backend during migration
   backend/                  # FastAPI application
   pipeline/
