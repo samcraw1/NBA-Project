@@ -58,7 +58,7 @@ def get_game(gameId: str):
                 "playerId": p["personId"],
                 "playerName": p["name"],
                 "pts": p["statistics"]["points"],
-                "pos": p["position"],
+                "pos": p.get("position"),
                 "played": p["played"] == "1"
             }
             for p in players
@@ -105,7 +105,7 @@ def get_player(player_id: int):
         return {
             "playerId": player["personId"],
             "playerName": player["name"],
-            "position": player["position"],
+            "position": player.get("position"),
             "jerseyNum": player["jerseyNum"],
             "starter": player["starter"] == "1",
             "played": player["played"] == "1",
