@@ -1,18 +1,50 @@
+import pandas as pd
+
 from nba_api.stats.endpoints import LeagueGameLog
+from nba_api.stats.static import players
+from nba_api.stats.static import teams
 import os 
+import time
 
-def extract_games(season):
+def extract_games(season, max_retries = 3):
+    # Hits stats.nba.com live; this sandbox's network can't reach it (times out).
+    # Run this script on your home machine to actually pull game data.
+    for attempt in range(max_retries):
+        try:
+            log = LeagueGameLog(season=season, player_or_team_abbreviation="P")
+            return log.get_data_frames()[0] 
+        except Exception as event:
+            print(f"attempt {attempt+1} failed: {event}")
+            time.sleep(5)
+
+    raise RuntimeError(f"extract_games failed after{ max_retries} attempts")
+       
+
+def extract_teams(max_retries = 3):
+    try:
+        return pd.DataFrame(teams.get_teams())
+    except Exception as event:
+        print(f"failed to extract players: {event}")
+        raise RuntimeError(f"extract_teams failed after {max_retries}")
+
+def extract_players(max_retries =3):
+    try:
+        return pd.DataFrame(players.get_players())
+    except Exception as event:
+        print(f"Failed to extract players: {event}")
+        raise RuntimeError(f"extract_players failed after { max_retries}")
 
 
-    log = LeagueGameLog(season=season, player_or_team_abbreviation="P")
-    return log.get_data_frames()[0] 
-
+    
 if __name__ == "__main__":
     season = "2025-26"
     folder = "season_exports"
     file_path = f"{folder}/games_{season}.csv"
+    playerdata = extract_players()
+    
 
     data = extract_games(season)
+    teamdata = extract_teams()
     print(data.head())
     print(data.columns.to_list())
     print(data.shape)
@@ -20,3 +52,9 @@ if __name__ == "__main__":
 
     os.makedirs(folder, exist_ok=True)
     data.to_csv(file_path, index=False)
+    teamdata.to_csv(f"{folder}/teams.csv", index= False)
+    playerdata.to_csv(f"{folder}/players.csv", index = False)
+    
+
+
+    

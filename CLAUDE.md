@@ -58,18 +58,18 @@ Complete objectives incrementally. Do not jump ahead without a reason.
 
 ### 1. Data extraction (current priority)
 - [x] Verify the Python FastAPI endpoints against the existing frontend.
-- [ ] Create standalone extraction scripts, independent of HTTP requests.
-- [ ] Retrieve historical league game logs, player information, and teams using `nba_api.stats`.
-- [ ] Start with one season; save datasets as CSV or JSON locally.
+- [x] Create standalone extraction scripts, independent of HTTP requests. (`extract.py`)
+- [x] Retrieve historical league game logs, player information, and teams using `nba_api.stats`. (`extract_games`, `extract_teams`, `extract_players` in `extract.py`; teams/players verified, 30 teams / 5135 players)
+- [x] Start with one season; save datasets as CSV or JSON locally. (2025-26 season to `season_exports/`)
 - [ ] Understand dictionaries, list comprehensions, DataFrames, API errors, and concurrency.
-- [ ] Add timeouts and bounded retries; respect upstream rate limits.
+- [x] Add timeouts and bounded retries; respect upstream rate limits. (`extract_games` retries on failure with a 5s wait, bounded by `max_retries`; no explicit `timeout=` set yet, relies on `nba_api`'s default)
 
 ### 2. Data transformation
-- [ ] Inspect schemas, null values, duplicates, and data types.
-- [ ] Standardize columns and dates; preserve source identifiers.
-- [ ] Calculate shooting percentages safely, handling zero attempts.
-- [ ] Join player, team, and game datasets.
-- [ ] Keep raw data unchanged; write transformed data separately.
+- [x] Inspect schemas, null values, duplicates, and data types. (`transform.py` asserts)
+- [x] Standardize columns and dates; preserve source identifiers.
+- [x] Calculate shooting percentages safely, handling zero attempts. (`np.where` guards on `fg3_pct`/`ft_pct`/`fg_pct` in `transform.py`)
+- [ ] Join player, team, and game datasets. (single dataset only so far)
+- [x] Keep raw data unchanged; write transformed data separately. (`season_exports/` raw -> `processed/` transformed)
 
 ### 3. SQL and data modeling
 - [ ] Run PostgreSQL locally before provisioning paid infrastructure.

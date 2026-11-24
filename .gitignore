@@ -4,3 +4,9 @@ __pycache__/
 dist/
 season_exports/
 processed/
+
+# Terraform
+infrastructure/.terraform/
+infrastructure/*.tfstate
+infrastructure/*.tfstate.*
+infrastructure/*.tfvars

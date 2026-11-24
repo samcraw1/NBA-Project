@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NBA Project — Architecture</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0;
+    padding: 32px 24px 64px;
+    background: #fafafa;
+    color: #16181c;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #0e0f12; color: #e8e8ea; }
+  }
+  main { max-width: 1180px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  p.lede { color: inherit; opacity: 0.75; margin: 0 0 28px; max-width: 760px; line-height: 1.5; font-size: 14px; }
+  figure { margin: 0; }
+  figcaption {
+    margin-top: 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    opacity: 0.75;
+    max-width: 900px;
+  }
+  svg { width: 100%; height: auto; display: block; }
+  .legend-html {
+    display: flex;
+    gap: 24px;
+    margin-top: 28px;
+    font-size: 13px;
+    opacity: 0.85;
+  }
+  .legend-html span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { display: inline-block; width: 22px; height: 0; border-top: 2px solid currentColor; }
+  .swatch.dashed { border-top-style: dashed; }
+  section.status {
+    margin-top: 36px;
+    padding-top: 20px;
+    border-top: 1px solid currentColor;
+    opacity: 0.95;
+  }
+  section.status h2 { font-size: 15px; margin: 0 0 10px; }
+  section.status ul { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.7; }
+</style>
+</head>
+<body>
+<main>
+  <h1>NBA Project — Architecture</h1>
+  <p class="lede">
+    Two independent paths today: a live path serving the frontend directly from NBA.com,
+    and a historical pipeline that extracts and transforms season data to local CSV.
+    They are not yet wired together — the pipeline's output isn't loaded into a database
+    or served by the API. Dashed boxes below are planned, not built.
+  </p>
+
+  <figure>
+    <svg viewBox="0 0 1200 1030" role="img" aria-label="Architecture diagram: a solid, implemented live path runs React through FastAPI to NBA.com's live API; a solid, implemented historical pipeline extracts season data via extract.py into raw CSV, then transform.py into processed CSV; dashed, planned steps load that into PostgreSQL, serve it from new FastAPI routes, and eventually host everything on AWS with S3, RDS, Terraform, and scheduled orchestration.">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 Z" fill="currentColor"></path>
+        </marker>
+      </defs>
+
+      <!-- Legend -->
+      <line x1="840" y1="38" x2="880" y2="38" stroke="currentColor" stroke-width="1.5"></line>
+      <text x="888" y="42" font-size="12">implemented</text>
+      <line x1="840" y1="58" x2="880" y2="58" stroke="currentColor" stroke-width="1.5" stroke-dasharray="6 4"></line>
+      <text x="888" y="62" font-size="12">planned</text>
+
+      <!-- Section 1: Live path -->
+      <text x="40" y="70" font-size="14" font-weight="600">LIVE PATH — implemented, verified against live NBA data</text>
+
+      <rect x="40" y="90" width="200" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"></rect>
+      <text x="140" y="114" text-anchor="middle" font-size="12.5">React Frontend</text>
+      <text x="140" y="129" text-anchor="middle" font-size="12.5">(src/, Vite)</text>
+
+      <line x1="240" y1="120" x2="298" y2="120" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow)"></line>
+      <text x="269" y="110" text-anchor="middle" font-size="10.5">fetch /api/*</text>
+
+      <rect x="300" y="90" width="200" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"></rect>
+      <text x="400" y="107" text-anchor="middle" font-size="12.5">FastAPI</text>
+      <text x="400" y="121" text-anchor="middle" font-size="12.5">(server.py)</text>
+      <text x="400" y="135" text-anchor="middle" font-size="11" opacity="0.75">5 routes</text>
+
+      <line x1="500" y1="120" x2="558" y2="120" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow)"></line>
+      <text x="529" y="110" text-anchor="middle" font-size="10.5">on-demand GET</text>
+
+      <rect x="560" y="90" width="200" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"></rect>
+      <text x="660" y="114" text-anchor="middle" font-size="12.5">NBA.com</text>
+      <text x="660" y="129" text-anchor="middle" font-size="12.5">Live API</text>
+
+      <!-- Section 2: Historical path -->
+      <text x="40" y="200" font-size="14" font-weight="600">HISTORICAL / BATCH PATH — pipeline, partially implemented</text>
+
+      <rect x="40" y="225" width="280" height="70" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"></rect>
+      <text x="180" y="264" text-anchor="middle" font-size="12.5">NBA.com Stats API</text>
+
+      <line x1="180" y1="295" x2="180" y2="333" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow)"></line>
+      <text x="330" y="310" font-size="10.5">GET LeagueGameLog</text>
+      <text x="330" y="323" font-size="10.5" opacity="0.75">(retry ×3, backoff)</text>
+
+      <rect x="40" y="335" width="280" height="70" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"></rect>
+      <text x="180" y="362" text-anchor="middle" font-size="12.5">extract.py</text>
+      <text x="180" y="378" text-anchor="middle" font-size="11" opacity="0.75">games · teams · players</text>
+
+      <line x1="180" y1="405" x2="180" y2="443" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow)"></line>
+      <text x="330" y="420" font-size="10.5">write CSV</text>
+
+      <rect x="40" y="445" width="280" height="70" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"></rect>
+      <text x="180" y="472" text-anchor="middle" font-size="12.5">season_exports/ (raw)</text>
+      <text x="180" y="488" text-anchor="middle" font-size="11" opacity="0.75">games · teams · players .csv</text>
+
+      <line x1="180" y1="515" x2="180" y2="553" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow)"></line>
+      <text x="330" y="530" font-size="10.5">read + merge</text>
+      <text x="330" y="543" font-size="10.5" opacity="0.75">(attach team/player names)</text>
+
+      <rect x="40" y="555" width="280" height="70" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"></rect>
+      <text x="180" y="582" text-anchor="middle" font-size="12.5">transform.py</text>
+      <text x="180" y="598" text-anchor="middle" font-size="11" opacity="0.75">clean + validate (asserts)</text>
+
+      <line x1="180" y1="625" x2="180" y2="663" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow)"></line>
+      <text x="330" y="640" font-size="10.5">write CSV</text>
+
+      <rect x="40" y="665" width="280" height="70" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"></rect>
+      <text x="180" y="692" text-anchor="middle" font-size="12.5">processed/ (transformed)</text>
+      <text x="180" y="708" text-anchor="middle" font-size="11" opacity="0.75">games_2025-26.csv</text>
+
+      <!-- Planned continuation -->
+      <line x1="180" y1="735" x2="180" y2="773" stroke="currentColor" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#arrow)"></line>
+      <text x="190" y="750" font-size="10.5" opacity="0.75">planned: load</text>
+      <text x="190" y="763" font-size="10.5" opacity="0.75">into database</text>
+
+      <rect x="40" y="775" width="280" height="70" rx="6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.85"></rect>
+      <text x="180" y="802" text-anchor="middle" font-size="12.5" opacity="0.85">PostgreSQL</text>
+      <text x="180" y="818" text-anchor="middle" font-size="11" opacity="0.7">local → AWS RDS (planned)</text>
+
+      <line x1="320" y1="810" x2="398" y2="810" stroke="currentColor" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#arrow)"></line>
+
+      <rect x="400" y="775" width="260" height="70" rx="6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.85"></rect>
+      <text x="530" y="802" text-anchor="middle" font-size="12.5" opacity="0.85">FastAPI</text>
+      <text x="530" y="818" text-anchor="middle" font-size="11" opacity="0.7">DB-backed routes (planned)</text>
+
+      <!-- Down to AWS cloud box -->
+      <line x1="180" y1="845" x2="180" y2="893" stroke="currentColor" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#arrow)"></line>
+      <line x1="530" y1="845" x2="530" y2="893" stroke="currentColor" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#arrow)"></line>
+      <text x="190" y="873" font-size="10.5" opacity="0.75">AWS-hosted (planned)</text>
+
+      <!-- AWS cloud target box -->
+      <rect x="40" y="900" width="1120" height="110" rx="6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.85"></rect>
+      <text x="60" y="925" font-size="13.5" font-weight="600" opacity="0.9">AWS Cloud target — planned, not provisioned</text>
+      <text x="60" y="947" font-size="11.5" opacity="0.75">• S3 — raw + processed data (Parquet)</text>
+      <text x="60" y="965" font-size="11.5" opacity="0.75">• RDS PostgreSQL — private, single-AZ</text>
+      <text x="60" y="983" font-size="11.5" opacity="0.75">• Budget alert before any paid resource</text>
+      <text x="620" y="947" font-size="11.5" opacity="0.75">• Terraform — plan reviewed before apply</text>
+      <text x="620" y="965" font-size="11.5" opacity="0.75">• EventBridge / Airflow — scheduling (later)</text>
+      <text x="620" y="983" font-size="11.5" opacity="0.75">• Glue + Athena — analytics (later)</text>
+    </svg>
+    <figcaption>
+      The live path (top) answers frontend requests on demand, straight from NBA.com — fully built and verified.
+      The historical pipeline (middle) extracts one season's game logs, teams, and players to local CSV, then
+      cleans and validates them — also built. Everything dashed — loading into Postgres, new DB-backed API routes,
+      and any AWS hosting (S3, RDS, Terraform, scheduling) — is designed but not yet implemented.
+    </figcaption>
+  </figure>
+
+  <div class="legend-html">
+    <span><span class="swatch"></span> implemented &amp; verified</span>
+    <span><span class="swatch dashed"></span> planned, not built</span>
+  </div>
+
+  <section class="status">
+    <h2>Where the project stands (roadmap)</h2>
+    <ul>
+      <li><strong>1. Data extraction — done.</strong> Game logs, teams, and players all extract via <code>extract.py</code>, with bounded retries on the live call.</li>
+      <li><strong>2. Data transformation — in progress.</strong> Schema checks, safe shooting %, and the merge across games/teams/players are done in <code>transform.py</code>; join cleanup (duplicate id columns) is the remaining loose end.</li>
+      <li><strong>3. SQL and data modeling — not started.</strong> No local Postgres, no migrations yet.</li>
+      <li><strong>4–5. ETL pipeline / analytics — not started.</strong></li>
+      <li><strong>6. AWS and Terraform — not started.</strong> Terraform and AWS CLI are installed locally; current AWS credentials are root-account keys, which should be replaced with a least-privilege IAM user before any provisioning.</li>
+      <li><strong>7–8. Orchestration / ML — not started.</strong></li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>
