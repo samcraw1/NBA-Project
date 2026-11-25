@@ -19,6 +19,14 @@ This is a learning-first project. Technical understanding is more important than
 - Terraform is written in `infrastructure/` (AWS provider, a private AES256-encrypted S3 bucket, and a $10/month budget alert at 80%). It was written on another device and has not been applied from this machine (no Terraform state exists here), so do not assume anything is deployed. There is no VPC, RDS, or IAM yet.
 - `architecture.html` is a standalone architecture and roadmap diagram.
 
+### Where I Am (2026-11-25)
+
+- Learning SQL joins by hand. Working: player + stats join. Last query written: top 10 player-games by points with the player and team, a three-table join (`teams`, `player_game_stats`, `players`). My usual mistake is forgetting the `on` for each `join`; the other recurring ones are missing semicolons and ambiguous columns.
+- Switching to a second MacBook. The code is pushed. The data is not in git. The database was dumped with `pg_dump` to `~/Desktop/nba_project.sql` (outside the repo) and restores with `createdb nba_project` then `psql nba_project < nba_project.sql`. The restore has not been tested yet.
+- There is no `requirements.txt` yet, so a fresh machine has to install `fastapi`, `uvicorn`, `nba_api`, `pandas`, `numpy` by hand. Generate one with `pip freeze > requirements.txt`.
+- `sql/migrations/004.sql` holds read-only practice queries, not a migration. Move them to `sql/queries/`.
+- Next: finish the join, then `group by` with joins (team scoring averages), CTEs, window functions, and a repeatable load script. AWS (Athena over S3 is the cheapest way to run SQL there; RDS bills hourly) comes after the load script exists. Nothing is applied in AWS.
+
 ### API Contract
 
 Preserve existing frontend-compatible routes and response fields:
@@ -83,7 +91,7 @@ Complete objectives incrementally. Do not jump ahead without a reason.
 - [ ] Use `(game_id, player_id)` as the player-game grain and `(game_id, team_id)` as the team-game grain. (player-game grain is the primary key of `player_game_stats`; team-game grain waits on `team_game_stats`)
 - [x] Store the team associated with each game statistic, not just a player's current team. (`team_id` on each `player_game_stats` row)
 - [x] Store made/attempted shots as numeric fields, not display strings. (`fgm`/`fga`/`fg3m`/`fg3a`/`ftm`/`fta` are `INTEGER`; percentages are nullable `NUMERIC`)
-- [ ] Write SQL manually to practice joins, CTEs, aggregations, and window functions. (so far only `select`, `where`, `group by` and `count`)
+- [ ] Write SQL manually to practice joins, CTEs, aggregations, and window functions. (so far `select`, `where`, `group by`, `count`, `order by`, `limit` and two- and three-table `inner join`s with aliases, practiced in `sql/migrations/004.sql`; CTEs and window functions not started)
 
 ### 4. ETL pipeline
 - [ ] Separate extraction, transformation, and loading into reusable modules.
