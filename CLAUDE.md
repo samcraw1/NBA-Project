@@ -12,7 +12,11 @@ This is a learning-first project. Technical understanding is more important than
 - Original Express/TypeScript backend in `server.ts`, using `nba-api-ts`.
 - Python FastAPI replacement in `server.py` (root) using `nba_api` and `ThreadPoolExecutor`. All five routes are implemented and were tested against live NBA data, including the 404 and 422 cases, and through the Vite proxy. The full UI was also confirmed working against it in a browser. The legacy Express `server.ts` is still in the repo.
 - Dashboard displays today's games, top scorers, player search, player cards, box scores, and play-by-play.
-- Current data is fetched on demand from NBA.com. Historical persistence, automated ETL, and AWS infrastructure are planned, not confirmed implemented.
+- Current data is fetched on demand from NBA.com. Automated ETL, a database, and deployed AWS infrastructure are planned, not confirmed implemented.
+- Historical pipeline (local, run by hand): `extract.py` pulls 2025-26 player game logs (up to 3 attempts) plus the teams and players lists into `season_exports/`. `transform.py` merges team and player names onto the game logs, derives columns, runs validation asserts, and writes `processed/games_2025-26.csv`. Both folders are gitignored, so on a fresh checkout run `python extract.py` before `python transform.py`.
+- The current `transform.py` and the Terraform were written and planned on another device and have not been run by the author. Claude ran `transform.py` once on 2026-11-24 in a scratch copy: all 26,651 game-log rows survive the team/player merges and no names are null. Known issues: the processed file ends up with duplicate `team_name` and `player_name` columns (the raw CSV already has them and the merge adds them again), and zero-attempt shooting percentages are now `0` instead of null, which will skew averages later.
+- Terraform is written in `infrastructure/` (AWS provider, a private AES256-encrypted S3 bucket, and a $10/month budget alert at 80%). It was written on another device and has not been applied from this machine (no Terraform state exists here), so do not assume anything is deployed. There is no VPC, RDS, or IAM yet.
+- `architecture.html` is a standalone architecture and roadmap diagram.
 
 ### API Contract
 
@@ -59,16 +63,16 @@ Complete objectives incrementally. Do not jump ahead without a reason.
 ### 1. Data extraction (current priority)
 - [x] Verify the Python FastAPI endpoints against the existing frontend.
 - [x] Create standalone extraction scripts, independent of HTTP requests. (`extract.py`)
-- [x] Retrieve historical league game logs, player information, and teams using `nba_api.stats`. (`extract_games`, `extract_teams`, `extract_players` in `extract.py`; teams/players verified, 30 teams / 5135 players)
+- [x] Retrieve historical league game logs, player information, and teams using `nba_api.stats`. (`extract_games`, `extract_teams`, `extract_players` in `extract.py`. The 2025-26 game logs came from an earlier version of the script; the current `extract.py` has not been run end to end. The teams and players functions were checked 2026-11-24: 30 teams, 5,198 players)
 - [x] Start with one season; save datasets as CSV or JSON locally. (2025-26 season to `season_exports/`)
 - [ ] Understand dictionaries, list comprehensions, DataFrames, API errors, and concurrency.
-- [x] Add timeouts and bounded retries; respect upstream rate limits. (`extract_games` retries on failure with a 5s wait, bounded by `max_retries`; no explicit `timeout=` set yet, relies on `nba_api`'s default)
+- [ ] Add timeouts and bounded retries; respect upstream rate limits. (`extract_games` has a retry loop with a 5s wait, bounded by `max_retries`, but it was written and never exercised. `extract_teams` and `extract_players` do not actually retry. No explicit `timeout=` set yet)
 
 ### 2. Data transformation
 - [x] Inspect schemas, null values, duplicates, and data types. (`transform.py` asserts)
 - [x] Standardize columns and dates; preserve source identifiers.
 - [x] Calculate shooting percentages safely, handling zero attempts. (`np.where` guards on `fg3_pct`/`ft_pct`/`fg_pct` in `transform.py`)
-- [ ] Join player, team, and game datasets. (single dataset only so far)
+- [x] Join player, team, and game datasets. (`transform.py` merges `teams.csv` and `players.csv` onto the game logs; verified no rows lost. Still to fix: duplicate `team_name`/`player_name` columns in the output)
 - [x] Keep raw data unchanged; write transformed data separately. (`season_exports/` raw -> `processed/` transformed)
 
 ### 3. SQL and data modeling
@@ -95,10 +99,10 @@ Complete objectives incrementally. Do not jump ahead without a reason.
 - [ ] Add database-backed API endpoints without breaking live endpoints.
 
 ### 6. AWS and Terraform
-- [ ] Provision S3, VPC, subnets, security groups, and small single-AZ RDS PostgreSQL.
+- [ ] Provision S3, VPC, subnets, security groups, and small single-AZ RDS PostgreSQL. (S3 bucket is defined in `infrastructure/s3.tf`; apply not confirmed; VPC and RDS not started)
 - [ ] Keep RDS private; explicitly design connectivity for backend and ingestion workers.
-- [ ] Use least-privilege IAM, encrypted storage, and managed secrets.
-- [ ] Add a budget alert before provisioning paid resources.
+- [ ] Use least-privilege IAM, encrypted storage, and managed secrets. (S3 encryption and public access block are defined in Terraform; IAM policies and secrets not done)
+- [ ] Add a budget alert before provisioning paid resources. (`infrastructure/budget.tf`: $10/month, alert at 80%; written, apply not confirmed)
 - [ ] Store raw and processed data in S3; introduce partitioned Parquet.
 - [ ] Review `terraform plan` before apply. Never apply or destroy without explicit approval.
 - [ ] Avoid NAT gateways, managed Airflow, and other expensive always-on services initially.
@@ -132,7 +136,8 @@ NBA-Project/
   sql/
     migrations/
     queries/
-  data/                     # Local generated data; gitignored
+  season_exports/           # Raw extracted data; gitignored
+  processed/                # Cleaned data; gitignored
   infrastructure/           # Terraform
   tests/
   CLAUDE.md
