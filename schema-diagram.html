@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NBA Project — Tables and Data Flow (draft)</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f4f6fb; --surface: #ffffff; --text: #0e1a3d; --muted: #5a6a99;
+    --line: #b9c3e0; --accent: #d9480f; --on-accent: #ffffff;
+    --built: #1f8a4c; --todo: #d9480f; --planned: #6b7aa8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0a1330; --surface: #121d40; --text: #f4f6fb; --muted: #a3b3e0;
+      --line: #35457a; --accent: #ff7a1f; --on-accent: #0a1330;
+      --built: #46c37b; --todo: #ff7a1f; --planned: #8c9bc8;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 32px 20px 64px; background: var(--bg); color: var(--text);
+         font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 960px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 28px; }
+  h2 { margin: 40px 0 6px; font-size: 20px; }
+  p.sub { margin: 0 0 16px; color: var(--muted); }
+  .draft { display: inline-block; padding: 2px 10px; border: 1px solid var(--line);
+           border-radius: 999px; font-size: 13px; color: var(--muted); }
+
+  /* ----- ER diagram ----- */
+  svg { width: 100%; height: auto; display: block; }
+  .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+  .hd  { fill: var(--accent); }
+  .hdt { fill: var(--on-accent); font: 700 14px ui-monospace, Menlo, monospace; }
+  .col { fill: var(--text); font: 12.5px ui-monospace, Menlo, monospace; }
+  .key { fill: var(--accent); font: 700 12.5px ui-monospace, Menlo, monospace; }
+  .tag { fill: var(--muted); font: 11px ui-monospace, Menlo, monospace; text-anchor: end; }
+  .rel { fill: none; stroke: var(--muted); stroke-width: 1.8; }
+  .card { fill: var(--text); font: 700 13px system-ui, sans-serif;
+          paint-order: stroke; stroke: var(--bg); stroke-width: 4px; }
+  .rowline { stroke: var(--line); stroke-width: 0.6; opacity: .6; }
+
+  .note { margin: 14px 0 0; padding: 12px 14px; background: var(--surface);
+          border-left: 4px solid var(--accent); border-radius: 6px; font-size: 14px; }
+
+  /* ----- pipeline ----- */
+  .flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 12px 0 4px; }
+  .node { flex: 0 1 auto; padding: 10px 12px; background: var(--surface);
+          border: 1.5px solid var(--line); border-radius: 8px; font-size: 14px; min-width: 120px; }
+  .node b { display: block; }
+  .node small { color: var(--muted); }
+  .arrow { align-self: center; color: var(--muted); font-size: 20px; }
+  .chip { display: inline-block; margin-top: 4px; padding: 0 8px; border-radius: 999px;
+          font-size: 11px; font-weight: 700; color: var(--bg); }
+  .built { background: var(--built); } .todo { background: var(--todo); } .planned { background: var(--planned); }
+  .label { margin: 22px 0 0; font-weight: 700; font-size: 14px; color: var(--muted);
+           text-transform: uppercase; letter-spacing: .05em; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 18px; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>NBA Project: tables and data flow</h1>
+  <p class="sub"><span class="draft">Draft design. The tables are not created yet.</span></p>
+
+  <h2>Zoomed in: how the tables relate</h2>
+  <p class="sub">PK = primary key, FK = foreign key. “1” is the parent side of a relationship, “N” is the many side.</p>
+
+  <svg viewBox="0 0 920 545" role="img" aria-label="Entity relationship diagram: teams, players and games each link one-to-many to player_game_stats.">
+    <!-- relationships (drawn first so boxes sit on top) -->
+    <path class="rel" d="M270 126 H300 V265 H330"/>
+    <path class="rel" d="M690 104 H650 V265 H630"/>
+    <path class="rel" d="M270 350 H330"/>
+    <text class="card" x="278" y="118">1</text>
+    <text class="card" x="312" y="257">N</text>
+    <text class="card" x="672" y="96" text-anchor="end">1</text>
+    <text class="card" x="640" y="257" text-anchor="end">N</text>
+    <text class="card" x="278" y="342">1</text>
+    <text class="card" x="312" y="342">N</text>
+
+    <!-- teams -->
+    <g transform="translate(40,30)">
+      <rect class="box" width="230" height="192" rx="8"/>
+      <path class="hd" d="M0 8a8 8 0 0 1 8-8h214a8 8 0 0 1 8 8v22H0z"/>
+      <text class="hdt" x="14" y="21">teams</text>
+      <text class="key" x="14" y="52">team_id</text><text class="tag" x="216" y="52">INT · PK</text>
+      <text class="col" x="14" y="74">full_name</text>
+      <text class="col" x="14" y="96">abbreviation</text>
+      <text class="col" x="14" y="118">nickname</text>
+      <text class="col" x="14" y="140">city</text>
+      <text class="col" x="14" y="162">state</text>
+      <text class="col" x="14" y="184">year_founded</text>
+    </g>
+
+    <!-- players -->
+    <g transform="translate(690,30)">
+      <rect class="box" width="210" height="148" rx="8"/>
+      <path class="hd" d="M0 8a8 8 0 0 1 8-8h194a8 8 0 0 1 8 8v22H0z"/>
+      <text class="hdt" x="14" y="21">players</text>
+      <text class="key" x="14" y="52">player_id</text><text class="tag" x="196" y="52">INT · PK</text>
+      <text class="col" x="14" y="74">full_name</text>
+      <text class="col" x="14" y="96">first_name</text>
+      <text class="col" x="14" y="118">last_name</text>
+      <text class="col" x="14" y="140">is_active</text>
+    </g>
+
+    <!-- games -->
+    <g transform="translate(40,300)">
+      <rect class="box" width="230" height="104" rx="8"/>
+      <path class="hd" d="M0 8a8 8 0 0 1 8-8h214a8 8 0 0 1 8 8v22H0z"/>
+      <text class="hdt" x="14" y="21">games</text>
+      <text class="key" x="14" y="52">game_id</text><text class="tag" x="216" y="52">TEXT · PK</text>
+      <text class="col" x="14" y="74">game_date</text><text class="tag" x="216" y="74">DATE</text>
+      <text class="col" x="14" y="96">season</text><text class="tag" x="216" y="96">TEXT</text>
+    </g>
+
+    <!-- player_game_stats -->
+    <g transform="translate(330,250)">
+      <rect class="box" width="300" height="258" rx="8"/>
+      <path class="hd" d="M0 8a8 8 0 0 1 8-8h284a8 8 0 0 1 8 8v22H0z"/>
+      <text class="hdt" x="14" y="21">player_game_stats</text>
+      <text class="key" x="14" y="52">game_id</text><text class="tag" x="286" y="52">PK · FK → games</text>
+      <text class="key" x="14" y="74">player_id</text><text class="tag" x="286" y="74">PK · FK → players</text>
+      <text class="col" x="14" y="96">team_id</text><text class="tag" x="286" y="96">FK → teams</text>
+      <text class="col" x="14" y="118">is_home · zero_minutes · wl</text>
+      <text class="col" x="14" y="140">min · pts · reb · ast</text>
+      <text class="col" x="14" y="162">stl · blk · tov · pf</text>
+      <text class="col" x="14" y="184">fgm · fga · fg_pct</text>
+      <text class="col" x="14" y="206">fg3m · fg3a · fg3_pct</text>
+      <text class="col" x="14" y="228">ftm · fta · ft_pct</text>
+      <text class="col" x="14" y="250">oreb · dreb · plus_minus · …</text>
+    </g>
+  </svg>
+
+  <div class="note">
+    <b>Why the middle table exists:</b> a player plays in many games and a game has many players. One row per
+    (game, player) pair resolves that, and it is where the stats live. About 22 rows per game
+    (26,651 rows ÷ 1,230 games for 2025-26).<br>
+    <b>Why no home team on <code>games</code>:</b> 5 of the 1,230 games have no home team in the data
+    (both teams show “@” in MATCHUP), so a required <code>home_team_id</code> couldn't load them.
+    <code>is_home</code> lives on the stats row instead.<br>
+    <b>Later:</b> a <code>team_game_stats</code> table at (game_id, team_id) from your roadmap.
+  </div>
+
+  <h2>Zoomed out: where the tables sit in the project</h2>
+
+  <p class="label">Historical path (what you're building)</p>
+  <div class="flow">
+    <div class="node"><b>NBA.com</b><small>stats endpoints</small></div><span class="arrow">→</span>
+    <div class="node"><b>extract.py</b><small>games, teams, players</small><br><span class="chip built">built</span></div><span class="arrow">→</span>
+    <div class="node"><b>season_exports/</b><small>raw CSVs, gitignored</small></div><span class="arrow">→</span>
+    <div class="node"><b>transform.py</b><small>clean, derive, validate</small><br><span class="chip built">built</span></div><span class="arrow">→</span>
+    <div class="node"><b>processed/</b><small>clean CSV, gitignored</small></div><span class="arrow">→</span>
+    <div class="node"><b>load step</b><small>CSV into tables</small><br><span class="chip todo">to do</span></div><span class="arrow">→</span>
+    <div class="node"><b>PostgreSQL</b><small>nba_project, local</small><br><span class="chip todo">tables to do</span></div><span class="arrow">→</span>
+    <div class="node"><b>FastAPI</b><small>DB-backed routes</small><br><span class="chip planned">planned</span></div><span class="arrow">→</span>
+    <div class="node"><b>React</b><small>analytics pages</small><br><span class="chip planned">planned</span></div>
+  </div>
+
+  <p class="label">Live path (already working, separate from the database)</p>
+  <div class="flow">
+    <div class="node"><b>NBA.com</b><small>live endpoints</small></div><span class="arrow">→</span>
+    <div class="node"><b>server.py</b><small>5 routes</small><br><span class="chip built">built</span></div><span class="arrow">→</span>
+    <div class="node"><b>React</b><small>today's games, box scores</small><br><span class="chip built">built</span></div>
+  </div>
+
+  <p class="label">Cloud (written, not applied)</p>
+  <div class="flow">
+    <div class="node"><b>processed/</b></div><span class="arrow">→</span>
+    <div class="node"><b>S3</b><small>Terraform written</small><br><span class="chip todo">not applied</span></div><span class="arrow">→</span>
+    <div class="node"><b>Athena</b><small>SQL on files</small><br><span class="chip planned">planned</span></div>
+    <span class="arrow" style="margin-left:18px">·</span>
+    <div class="node"><b>RDS PostgreSQL</b><small>cloud copy of the DB</small><br><span class="chip planned">planned</span></div>
+  </div>
+
+  <div class="note">
+    <b>Where each file lands:</b> <code>teams.csv</code> → <code>teams</code> ·
+    <code>players.csv</code> → <code>players</code> ·
+    <code>processed/games_2025-26.csv</code> → split into <code>games</code> (distinct game_id, date, season)
+    and <code>player_game_stats</code> (everything else).
+  </div>
+
+  <div class="legend">
+    <span><span class="chip built">built</span> written and run</span>
+    <span><span class="chip todo">to do</span> next up or not applied</span>
+    <span><span class="chip planned">planned</span> later</span>
+  </div>
+</main>
+</body>
+</html>

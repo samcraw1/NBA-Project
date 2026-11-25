@@ -123,4 +123,4 @@ def get_player(player_id: int):
         }
     except Exception:
         return bad_gateway()
-
+    

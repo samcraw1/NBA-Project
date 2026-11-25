@@ -151,6 +151,7 @@ NBA-Project/
 - Inspect existing code before suggesting changes. Distinguish implemented, drafted, and planned functionality.
 - Explain the objective, why it matters, and the smallest next step.
 - Prefer short, literal explanations and small code examples.
+- Keep responses short. No long essays: a few sentences and one small example by default, and go deeper only when I ask.
 - When teaching Python, compare unfamiliar syntax with TypeScript equivalents when useful.
 - For core Python, SQL, ETL, and Terraform exercises, provide hints or scaffolding first; allow me to write the implementation. Give complete implementations when explicitly requested.
 - When reviewing my code, identify the exact problematic line, explain why it fails, and suggest the smallest fix. Do not rewrite the whole file unnecessarily.
