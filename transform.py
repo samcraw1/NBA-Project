@@ -9,6 +9,7 @@ df.columns = df.columns.str.lower()
 teams_df = pd.read_csv("season_exports/teams.csv")
 players_df = pd.read_csv("season_exports/players.csv")
 
+
 # The game log already has team_name and player_name; drop them so the merged
 # full_name columns below don't create duplicate column names.
 df = df.drop(columns=["team_name", "player_name"])
@@ -53,3 +54,18 @@ assert (df.groupby("game_id")["team_id"].nunique() == 2).all(), "a game doesn't 
 # --- Write ---
 os.makedirs("processed", exist_ok=True)
 df.to_csv("processed/games_2025-26.csv", index=False)
+
+games = df[["game_id", "game_date", "season"]].drop_duplicates()
+games.to_csv("processed/games.csv", index=False)
+print(len(games))   # expect 1230
+
+# Only the player_game_stats table's columns, in the same order as its CREATE TABLE,
+# so \copy can load the file with no column mapping surprises.
+stats = df[[
+    "game_id", "player_id", "team_id", "is_home", "zero_minutes", "wl", "min",
+    "fgm", "fga", "fg3m", "fg3a", "ftm", "fta",
+    "oreb", "dreb", "reb", "ast", "stl", "blk", "tov", "pf", "pts", "plus_minus",
+    "fg_pct", "fg3_pct", "ft_pct", "fantasy_pts",
+]]
+stats.to_csv("processed/player_game_stats.csv", index=False)
+print(len(stats))   # expect 26651
