@@ -12,9 +12,10 @@ This is a learning-first project. Technical understanding is more important than
 - Original Express/TypeScript backend in `server.ts`, using `nba-api-ts`.
 - Python FastAPI replacement in `server.py` (root) using `nba_api` and `ThreadPoolExecutor`. All five routes are implemented and were tested against live NBA data, including the 404 and 422 cases, and through the Vite proxy. The full UI was also confirmed working against it in a browser. The legacy Express `server.ts` is still in the repo.
 - Dashboard displays today's games, top scorers, player search, player cards, box scores, and play-by-play.
-- Current data is fetched on demand from NBA.com. Automated ETL, a database, and deployed AWS infrastructure are planned, not confirmed implemented.
-- Historical pipeline (local, run by hand): `extract.py` pulls 2025-26 player game logs (up to 3 attempts) plus the teams and players lists into `season_exports/`. `transform.py` merges team and player names onto the game logs, derives columns, runs validation asserts, and writes `processed/games_2025-26.csv`. Both folders are gitignored, so on a fresh checkout run `python extract.py` before `python transform.py`.
-- The current `transform.py` and the Terraform were written and planned on another device and have not been run by the author. Claude ran `transform.py` once on 2026-11-24 in a scratch copy: all 26,651 game-log rows survive the team/player merges and no names are null. Two issues found in that run were fixed and re-verified the same day: duplicate `team_name`/`player_name` columns, and zero-attempt shooting percentages being filled with `0` (they are null again, only where there were no attempts).
+- The live dashboard data is fetched on demand from NBA.com. Automated ETL and deployed AWS infrastructure are planned, not confirmed implemented.
+- Historical pipeline (local, run by hand): `extract.py` pulls 2025-26 player game logs (up to 3 attempts) plus the teams and players lists into `season_exports/`. `transform.py` merges team and player names onto the game logs, derives columns, runs validation asserts, and writes `processed/games_2025-26.csv` plus the table-shaped `processed/games.csv` and `processed/player_game_stats.csv`. Both folders are gitignored, so on a fresh checkout run `python extract.py` before `python transform.py`.
+- Local PostgreSQL 14 (Homebrew) database `nba_project`, built by `sql/migrations/001` to `003` and loaded by hand with `\copy` from `processed/` and `season_exports/` (2026-11-24): `teams` 30 rows, `players` 5,198, `games` 1,230, `player_game_stats` 26,651. Primary keys, foreign keys and `NOT NULL` are in place. 5 of the 1,230 games have no home team in the data (both teams show "@"), so `games` has no home/away columns and `is_home` lives on the stats rows. There is no load script, FastAPI is not connected to the database, and the load is not repeatable: rerunning `\copy` fails on duplicate keys.
+- The current `transform.py` and the Terraform were written and planned on another device. `transform.py` has since been run in this repo (2026-11-24) and its output loaded into Postgres; the Terraform has not been run. In an earlier scratch-copy run, all 26,651 game-log rows survive the team/player merges and no names are null. Two issues found in that run were fixed and re-verified the same day: duplicate `team_name`/`player_name` columns, and zero-attempt shooting percentages being filled with `0` (they are null again, only where there were no attempts).
 - Terraform is written in `infrastructure/` (AWS provider, a private AES256-encrypted S3 bucket, and a $10/month budget alert at 80%). It was written on another device and has not been applied from this machine (no Terraform state exists here), so do not assume anything is deployed. There is no VPC, RDS, or IAM yet.
 - `architecture.html` is a standalone architecture and roadmap diagram.
 
@@ -76,13 +77,13 @@ Complete objectives incrementally. Do not jump ahead without a reason.
 - [x] Keep raw data unchanged; write transformed data separately. (`season_exports/` raw -> `processed/` transformed)
 
 ### 3. SQL and data modeling
-- [ ] Run PostgreSQL locally before provisioning paid infrastructure.
-- [ ] Create SQL migrations for players, teams, games, player_game_stats, and team_game_stats.
-- [ ] Define primary keys, foreign keys, constraints, and indexes.
-- [ ] Use `(game_id, player_id)` as the player-game grain and `(game_id, team_id)` as the team-game grain.
-- [ ] Store the team associated with each game statistic, not just a player's current team.
-- [ ] Store made/attempted shots as numeric fields, not display strings.
-- [ ] Write SQL manually to practice joins, CTEs, aggregations, and window functions.
+- [x] Run PostgreSQL locally before provisioning paid infrastructure. (PostgreSQL 14, database `nba_project`)
+- [ ] Create SQL migrations for players, teams, games, player_game_stats, and team_game_stats. (4 of 5 done: `sql/migrations/001` to `003`; `team_game_stats` not started)
+- [ ] Define primary keys, foreign keys, constraints, and indexes. (primary keys, foreign keys and `NOT NULL` done; no `CHECK` constraints or extra indexes yet)
+- [ ] Use `(game_id, player_id)` as the player-game grain and `(game_id, team_id)` as the team-game grain. (player-game grain is the primary key of `player_game_stats`; team-game grain waits on `team_game_stats`)
+- [x] Store the team associated with each game statistic, not just a player's current team. (`team_id` on each `player_game_stats` row)
+- [x] Store made/attempted shots as numeric fields, not display strings. (`fgm`/`fga`/`fg3m`/`fg3a`/`ftm`/`fta` are `INTEGER`; percentages are nullable `NUMERIC`)
+- [ ] Write SQL manually to practice joins, CTEs, aggregations, and window functions. (so far only `select`, `where`, `group by` and `count`)
 
 ### 4. ETL pipeline
 - [ ] Separate extraction, transformation, and loading into reusable modules.
