@@ -37,21 +37,23 @@ def extract_players(max_retries =3):
 
     
 if __name__ == "__main__":
-    season = "2025-26"
-    folder = "season_exports"
-    file_path = f"{folder}/games_{season}.csv"
+    
+   
+    folder = "season_exports" 
+    os.makedirs(folder, exist_ok=True)
+    seasons = ["2023-24", "2024-25", "2025-26"]
+    for season in seasons:
+        games_df = extract_games(season)
+        games_df.to_csv(f"season_exports/games_{season}.csv", index=False)
     playerdata = extract_players()
     
 
-    data = extract_games(season)
+    
     teamdata = extract_teams()
-    print(data.head())
-    print(data.columns.to_list())
-    print(data.shape)
 
 
-    os.makedirs(folder, exist_ok=True)
-    data.to_csv(file_path, index=False)
+    
+   
     teamdata.to_csv(f"{folder}/teams.csv", index= False)
     playerdata.to_csv(f"{folder}/players.csv", index = False)
     
