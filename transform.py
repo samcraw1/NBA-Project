@@ -9,6 +9,9 @@ df.columns = df.columns.str.lower()
 teams_df = pd.read_csv("season_exports/teams.csv")
 players_df = pd.read_csv("season_exports/players.csv")
 
+# The game log already has team_name and player_name; drop them so the merged
+# full_name columns below don't create duplicate column names.
+df = df.drop(columns=["team_name", "player_name"])
 
 df = df.merge(teams_df[["id", "full_name"]], left_on="team_id", right_on="id", suffixes=("", "_team"))
 
@@ -30,10 +33,11 @@ df["opponent"] = df["matchup"].str[-3:]
 # Kept on purpose: MIN is rounded, so 0 means under ~30s, not a DNP.
 df["zero_minutes"] = df["min"] == 0
 
-# np.where(condition, value_if_true, value_if_false) avoids NaN/inf on 0 attempts.
-df["fg3_pct"] = np.where(df["fg3a"] > 0, df["fg3m"] / df["fg3a"], 0)
-df["ft_pct"] = np.where(df["fta"] > 0, df["ftm"] / df["fta"], 0)
-df["fg_pct"] = np.where(df["fga"] > 0, df["fgm"] / df["fga"], 0)
+# np.where(condition, value_if_true, value_if_false). With 0 attempts there is no
+# percentage, so it stays NaN (null), not 0; averaging zeros in would skew results later.
+df["fg3_pct"] = np.where(df["fg3a"] > 0, df["fg3m"] / df["fg3a"], np.nan)
+df["ft_pct"] = np.where(df["fta"] > 0, df["ftm"] / df["fta"], np.nan)
+df["fg_pct"] = np.where(df["fga"] > 0, df["fgm"] / df["fga"], np.nan)
 
 df = df.drop(columns=["video_available", "matchup"])
 

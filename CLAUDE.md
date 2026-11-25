@@ -14,7 +14,7 @@ This is a learning-first project. Technical understanding is more important than
 - Dashboard displays today's games, top scorers, player search, player cards, box scores, and play-by-play.
 - Current data is fetched on demand from NBA.com. Automated ETL, a database, and deployed AWS infrastructure are planned, not confirmed implemented.
 - Historical pipeline (local, run by hand): `extract.py` pulls 2025-26 player game logs (up to 3 attempts) plus the teams and players lists into `season_exports/`. `transform.py` merges team and player names onto the game logs, derives columns, runs validation asserts, and writes `processed/games_2025-26.csv`. Both folders are gitignored, so on a fresh checkout run `python extract.py` before `python transform.py`.
-- The current `transform.py` and the Terraform were written and planned on another device and have not been run by the author. Claude ran `transform.py` once on 2026-11-24 in a scratch copy: all 26,651 game-log rows survive the team/player merges and no names are null. Known issues: the processed file ends up with duplicate `team_name` and `player_name` columns (the raw CSV already has them and the merge adds them again), and zero-attempt shooting percentages are now `0` instead of null, which will skew averages later.
+- The current `transform.py` and the Terraform were written and planned on another device and have not been run by the author. Claude ran `transform.py` once on 2026-11-24 in a scratch copy: all 26,651 game-log rows survive the team/player merges and no names are null. Two issues found in that run were fixed and re-verified the same day: duplicate `team_name`/`player_name` columns, and zero-attempt shooting percentages being filled with `0` (they are null again, only where there were no attempts).
 - Terraform is written in `infrastructure/` (AWS provider, a private AES256-encrypted S3 bucket, and a $10/month budget alert at 80%). It was written on another device and has not been applied from this machine (no Terraform state exists here), so do not assume anything is deployed. There is no VPC, RDS, or IAM yet.
 - `architecture.html` is a standalone architecture and roadmap diagram.
 
@@ -72,7 +72,7 @@ Complete objectives incrementally. Do not jump ahead without a reason.
 - [x] Inspect schemas, null values, duplicates, and data types. (`transform.py` asserts)
 - [x] Standardize columns and dates; preserve source identifiers.
 - [x] Calculate shooting percentages safely, handling zero attempts. (`np.where` guards on `fg3_pct`/`ft_pct`/`fg_pct` in `transform.py`)
-- [x] Join player, team, and game datasets. (`transform.py` merges `teams.csv` and `players.csv` onto the game logs; verified no rows lost. Still to fix: duplicate `team_name`/`player_name` columns in the output)
+- [x] Join player, team, and game datasets. (`transform.py` merges `teams.csv` and `players.csv` onto the game logs; verified no rows lost and no duplicate columns)
 - [x] Keep raw data unchanged; write transformed data separately. (`season_exports/` raw -> `processed/` transformed)
 
 ### 3. SQL and data modeling
