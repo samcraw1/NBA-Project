@@ -107,8 +107,8 @@ Complete objectives incrementally. Do not jump ahead without a reason.
 - [ ] Add tests using saved fixtures rather than relying on live NBA requests.
 
 ### 5. Analytics
-- [ ] Season scoring leaders and team scoring averages.
-- [ ] Rolling five-game player averages.
+- [x] Season scoring leaders and team scoring averages. (`sql/queries/player_avg_points.sql`, `sql/queries/high_scoring_games.sql` for leaders; `sql/queries/team_avg_points.sql` for team averages — note this is the naive version, averaging per-player-game rows grouped by team, not true team score per game; the real two-level version, sum per game then average per team, is still unwritten as a CTE)
+- [x] Rolling five-game player averages. (`sql/queries/windowfunction.sql`: `avg(pts) over (partition by player_id order by game_date rows between 4 preceding and current row)`)
 - [ ] Season-over-season comparisons and player consistency.
 - [ ] Add database-backed API endpoints without breaking live endpoints.
 
