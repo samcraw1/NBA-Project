@@ -84,19 +84,6 @@ def get_plays(game_id: str):
     except Exception:
         return bad_gateway()
 
-@app.get("/api/leaders")
-def get_leaders():
-    with psycopg.connect("dbname=nba_project") as conn:
-        rows = conn.execute("""
-                select p.full_name, pgs.pts, pgs.game_id
-                from player_game_stats as pgs
-                inner join players as p on pgs.player_id = p.player_id
-                where pts > 25
-                order by pts desc
-                limit 10
-                """).fetchall()
-    return [{"player": r[0], "team": r[1], "pts": r[2]} for r in rows]
-
 @app.get("/api/averages")
 def get_averages():
     with psycopg.connect("dbname=nba_project") as conn:

@@ -5,6 +5,8 @@ from nba_api.stats.static import players
 from nba_api.stats.static import teams
 import os 
 import time
+import boto3
+import io
 
 def extract_games(season, max_retries = 3):
     # Hits stats.nba.com live; this sandbox's network can't reach it (times out).
@@ -33,6 +35,18 @@ def extract_players(max_retries =3):
     except Exception as event:
         print(f"Failed to extract players: {event}")
         raise RuntimeError(f"extract_players failed after { max_retries}")
+
+def lambda_handler(event, context):
+    df = extract_games("2025-26")
+    data = df.to_csv(index=False) 
+    s3 = boto3.client("s3")
+    s3.put_object(
+        Bucket=os.environ["BUCKET_NAME"],
+        Key="raw/games_2025-26.csv",
+        Body=data
+        
+        )
+    return{"status": "ok"}
 
 
     

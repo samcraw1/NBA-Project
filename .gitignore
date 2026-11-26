@@ -10,3 +10,7 @@ infrastructure/.terraform/
 infrastructure/*.tfstate
 infrastructure/*.tfstate.*
 infrastructure/*.tfvars
+
+# Lambda build output
+lambda_build/
+infrastructure/ingestion.zip
