@@ -1,9 +1,19 @@
-import psycopg2
+import os
+
 import pandas as pd
+import psycopg
 
 
 def get_connection():
-    return psycopg2.connect(dbname="nba_project")
+    # No credentials in code. DATABASE_URL points at RDS (see scripts/rds_env.sh);
+    # when it isn't set we load into the local database.
+    return psycopg.connect(os.environ.get("DATABASE_URL", "dbname=nba_project"))
+
+
+def clean(df):
+    # psycopg can't insert numpy numbers, and pandas uses NaN for blanks (we want NULL).
+    # astype(object) turns numpy values into plain Python ones; where() swaps NaN for None.
+    return df.astype(object).where(df.notna(), None)
 
 
 def load_teams(conn, teams_df):
@@ -105,14 +115,18 @@ def load_player_game_stats(conn, stats_df):
 
 
 if __name__ == "__main__":
-    conn = get_connection()
-    teams_df = pd.read_csv("season_exports/teams.csv")
-    load_teams(conn, teams_df)
-    players_df = pd.read_csv("season_exports/players.csv")
-    load_players(conn, players_df)
-    games_df = pd.read_csv("processed/games.csv")
-    load_games(conn, games_df)
-    stats_df = pd.read_csv("processed/player_game_stats.csv")
-    load_player_game_stats(conn, stats_df)
-    conn.close()
+    # game_id is text with leading zeros ("0022600001"); read_csv would turn it into a number.
+    ids = {"game_id": str}
+    teams_df = clean(pd.read_csv("season_exports/teams.csv"))
+    players_df = clean(pd.read_csv("season_exports/players.csv"))
+    games_df = clean(pd.read_csv("processed/games.csv", dtype=ids))
+    stats_df = clean(pd.read_csv("processed/player_game_stats.csv", dtype=ids))
 
+    with get_connection() as conn:   # commits on success, rolls back if anything raises
+        load_teams(conn, teams_df)
+        load_players(conn, players_df)
+        load_games(conn, games_df)
+        load_player_game_stats(conn, stats_df)
+
+    print(f"loaded {len(teams_df)} teams, {len(players_df)} players, "
+          f"{len(games_df)} games, {len(stats_df)} player-game rows")

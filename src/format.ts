@@ -47,3 +47,39 @@ export function shootingPct(fraction: string): string {
 export function signed(n: number): string {
   return n > 0 ? `+${n}` : String(n);
 }
+
+function localISO(d: Date): string {
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${month}-${day}`;
+}
+
+// "2026-11-25" -> "Wed, Nov 25"
+export function shortDate(iso: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+// "2026-11-25" -> "Nov 25"
+export function monthDay(iso: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+// The backend shows today's games, or the latest day that had games when nothing is on today.
+// These words say which one the page is showing.
+export function slateWords(gameDate: string | undefined): { hero: string; title: string } {
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (!gameDate || gameDate === localISO(now)) return { hero: "Tonight's NBA", title: "Today's games" };
+  if (gameDate === localISO(yesterday)) return { hero: "Last night's NBA", title: "Last night's games" };
+  return { hero: "Latest NBA", title: `Games on ${shortDate(gameDate)}` };
+}
+
+// 0.4567 -> "45.7%"; null (no attempts) -> "—"
+export function ratioPct(ratio: number | null): string {
+  return ratio === null ? "—" : `${(ratio * 100).toFixed(1)}%`;
+}

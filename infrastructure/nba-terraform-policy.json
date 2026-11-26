@@ -122,6 +122,21 @@
         "events:TagResource"
       ],
       "Resource": "arn:aws:events:us-east-1:506726968427:rule/nba-daily-ingestion"
+    },
+    {
+      "Sid": "GlueReadForTerraformImport",
+      "Effect": "Allow",
+      "Action": [
+        "glue:GetDatabase",
+        "glue:GetTable",
+        "glue:GetTags",
+        "glue:GetPartitionIndexes"
+      ],
+      "Resource": [
+        "arn:aws:glue:us-east-1:506726968427:catalog",
+        "arn:aws:glue:us-east-1:506726968427:database/nba",
+        "arn:aws:glue:us-east-1:506726968427:table/nba/player_game_stats"
+      ]
     }
   ]
 }

@@ -13,6 +13,15 @@ pip freeze > requirements.txt # save installed versions
 
 ## Data pipeline
 
+Keep the database current (run after game days; safe to rerun):
+
+```bash
+python refresh.py                          # extract + transform + load the current season, local Postgres
+AWS_PROFILE=default source scripts/rds_env.sh && python refresh.py   # same, into RDS (writes to AWS, costs nothing extra)
+```
+
+What each step does on its own:
+
 ```bash
 python extract.py     # NBA.com -> season_exports/*.csv   (raw, gitignored)
 python transform.py   # season_exports -> processed/*.csv (clean, gitignored)
@@ -20,7 +29,13 @@ python transform.py   # season_exports -> processed/*.csv (clean, gitignored)
 
 Run `extract.py` first on a fresh checkout. The CSVs are gitignored.
 
-Upload the local files to S3 (safe to rerun; `sync` only copies what changed):
+Add a new season to S3 (season-suffixed names, so Athena reads old and new files together): edit `season` in `s3practice.py`, then run it from the project root.
+
+```bash
+python s3practice.py
+```
+
+Or copy whole folders (safe to rerun; `sync` only copies what changed). Note this uses the flat layout, not the per-table folders Athena reads:
 
 ```bash
 export AWS_PROFILE=nba-terraform

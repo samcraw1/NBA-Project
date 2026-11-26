@@ -1,59 +1,58 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { endpoints } from "../api";
 import { PlayerRows } from "../components/PlayerRows";
 import { SectionHeader } from "../components/SectionHeader";
 import { EmptyState, ErrorState, SkeletonRows } from "../components/StateMessage";
-import type { FetchState, PlayerPoints } from "../types";
+import { useFetch } from "../hooks/useFetch";
+import type { PlayerSearchResult } from "../types";
 
 const PAGE_SIZE = 50;
+const MAX_RESULTS = 100; // the backend's cap
 
 type Sort = "pts" | "name";
 
-export function PlayersPage({
-  players,
-  onSelectPlayer,
-}: {
-  players: FetchState<PlayerPoints[]>;
-  onSelectPlayer: (playerId: number) => void;
-}) {
+export function PlayersPage({ onSelectPlayer }: { onSelectPlayer: (playerId: number) => void }) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("pts");
   const [limit, setLimit] = useState(PAGE_SIZE);
 
-  const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const found = (players.data ?? []).filter((p) => p.playerName.toLowerCase().includes(q));
-    return found.sort((a, b) =>
-      sort === "pts" ? b.pts - a.pts : a.playerName.localeCompare(b.playerName),
-    );
-  }, [players.data, query, sort]);
+  // Wait for a pause in typing before asking the backend.
+  const [term, setTerm] = useState("");
+  useEffect(() => {
+    const timer = window.setTimeout(() => setTerm(query.trim()), 250);
+    return () => window.clearTimeout(timer);
+  }, [query]);
 
-  const visible = matches.slice(0, limit);
-  const total = players.data?.length ?? 0;
+  // Searches the database, so any player with stats shows up, not just today's games.
+  const results = useFetch<PlayerSearchResult[]>(endpoints.playerSearch(term, limit));
+
+  const shown = useMemo(() => {
+    const list = [...(results.data ?? [])]; // the server already sorts by points per game
+    if (sort === "name") list.sort((a, b) => a.playerName.localeCompare(b.playerName));
+    return list;
+  }, [results.data, sort]);
+
+  const canShowMore = shown.length === limit && limit < MAX_RESULTS;
 
   let body;
-  if (players.loading) {
+  if (results.loading) {
     body = <SkeletonRows count={8} />;
-  } else if (players.error) {
+  } else if (results.error) {
     body = (
-      <ErrorState
-        message="Can't load players. NBA.com may be blocking requests, so try again in a minute."
-        onRetry={players.reload}
-      />
+      <ErrorState message="Can't search players right now. Try again in a minute." onRetry={results.reload} />
     );
-  } else if (matches.length === 0) {
-    body = (
-      <EmptyState
-        message={query.trim() ? `No players match "${query.trim()}".` : "No games are on the board yet."}
-      />
-    );
+  } else if (shown.length === 0) {
+    body = <EmptyState message={term ? `No players match "${term}".` : "No player stats in the database yet."} />;
   } else {
-    body = <PlayerRows players={visible} onSelect={onSelectPlayer} />;
+    body = <PlayerRows players={shown} onSelect={onSelectPlayer} />;
   }
 
   return (
-    <section className="panel" aria-labelledby="players-heading" aria-busy={players.loading}>
+    <section className="panel" aria-labelledby="players-heading" aria-busy={results.loading}>
       <SectionHeader id="players-heading" title="Player directory" />
-      <p className="lead">Players from today's games. Historical players are coming soon.</p>
+      <p className="lead">
+        Search any player to see their season stats. Numbers are points per game this season.
+      </p>
       <div className="search-form">
         <label className="sr-only" htmlFor="player-search">
           Search players
@@ -77,17 +76,15 @@ export function PlayersPage({
           <option value="name">Name A–Z</option>
         </select>
       </div>
-      {!players.loading && !players.error && total > 0 && (
+      {!results.loading && !results.error && shown.length > 0 && (
         <p className="note" role="status">
-          {matches.length === total
-            ? `${total} players`
-            : `${matches.length} of ${total} players`}
+          {term ? `${shown.length} ${shown.length === 1 ? "player" : "players"}` : "Scoring leaders this season"}
         </p>
       )}
       {body}
-      {matches.length > visible.length && (
+      {canShowMore && (
         <button type="button" className="btn btn-ghost expand" onClick={() => setLimit(limit + PAGE_SIZE)}>
-          Show more ({matches.length - visible.length} remaining)
+          Show more
         </button>
       )}
     </section>

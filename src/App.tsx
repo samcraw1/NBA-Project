@@ -13,14 +13,19 @@ import { GamesPage } from "./pages/GamesPage";
 import { PlayersPage } from "./pages/PlayersPage";
 import type { Game, PlayerPoints } from "./types";
 
+const LIVE_MS = 30_000; // refresh every 30s while a game is in progress
+const IDLE_MS = 5 * 60_000; // and every 5 minutes otherwise
+const pollMs = (games: Game[] | null) => (games?.some((g) => g.state === 2) ? LIVE_MS : IDLE_MS);
+
 export default function App() {
   const route = useHashRoute();
   const { theme, toggle } = useTheme();
 
   // Fetched once here and shared, so moving between pages doesn't re-hit the backend.
-  // (/api/players is the slow one: the backend loads every game's box score.)
-  const games = useFetch<Game[]>(endpoints.games);
-  const players = useFetch<PlayerPoints[]>(endpoints.players);
+  // The backend returns today's games, or the latest day that had games, and both lists refresh
+  // on a timer so the page keeps up as the season goes on.
+  const games = useFetch<Game[]>(endpoints.games, pollMs);
+  const players = useFetch<PlayerPoints[]>(endpoints.players, () => pollMs(games.data));
 
   const [selectedPlayer, setSelectedPlayer] = useState<number | null>(null);
 
@@ -45,7 +50,7 @@ export default function App() {
   } else if (section === "games") {
     page = <GamesPage games={games} />;
   } else if (section === "players") {
-    page = <PlayersPage players={players} onSelectPlayer={setSelectedPlayer} />;
+    page = <PlayersPage onSelectPlayer={setSelectedPlayer} />;
   } else if (section === "analytics") {
     page = <AnalyticsPage slug={param} />;
   } else {

@@ -34,7 +34,7 @@ export function GamesSection({
       />
     );
   } else if (list.length === 0) {
-    body = <EmptyState message="No games on the schedule today." />;
+    body = <EmptyState message="No recent games found." />;
   } else {
     body = (
       <div className="game-grid">

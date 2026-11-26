@@ -1,3 +1,5 @@
+import sys
+
 import pandas as pd
 
 from nba_api.stats.endpoints import LeagueGameLog
@@ -37,7 +39,8 @@ def extract_players(max_retries =3):
         raise RuntimeError(f"extract_players failed after { max_retries}")
 
 def lambda_handler(event, context):
-    df = extract_games("2025-26")
+    season = event.get("season", "2025-26")
+    df = extract_games(season)
     data = df.to_csv(index=False) 
     s3 = boto3.client("s3")
     s3.put_object(
@@ -49,16 +52,16 @@ def lambda_handler(event, context):
     return{"status": "ok"}
 
 
+
+
     
 if __name__ == "__main__":
     
-   
     folder = "season_exports" 
     os.makedirs(folder, exist_ok=True)
-    seasons = ["2023-24", "2024-25", "2025-26"]
-    for season in seasons:
-        games_df = extract_games(season)
-        games_df.to_csv(f"season_exports/games_{season}.csv", index=False)
+    season = sys.argv[1] if len(sys.argv) > 1 else "2026-27"
+    games_df = extract_games(season)
+    games_df.to_csv(f"season_exports/games_{season}.csv", index=False)
     playerdata = extract_players()
     
 

@@ -22,4 +22,11 @@ export const endpoints = {
   game: (gameId: string) => `/api/games/${encodeURIComponent(gameId)}`,
   plays: (gameId: string) => `/api/games/${encodeURIComponent(gameId)}/plays`,
   player: (playerId: number) => `/api/players/${playerId}`,
+  playerSearch: (q: string, limit: number) =>
+    `/api/players/search?q=${encodeURIComponent(q)}&limit=${limit}`,
+  playerSeason: (playerId: number, season: string | null) =>
+    `/api/players/${playerId}/season${season ? `?season=${encodeURIComponent(season)}` : ""}`,
+  seasons: "/api/seasons",
+  topGames: "/api/team_player_points",
+  teamAverages: "/api/team_averages",
 };

@@ -5,6 +5,7 @@ import { PlayerRows } from "../components/PlayerRows";
 import { SectionHeader } from "../components/SectionHeader";
 import { EmptyState, ErrorState, SkeletonRows } from "../components/StateMessage";
 import { ANALYTICS_FEATURES } from "../analytics";
+import { slateWords } from "../format";
 import type { FetchState, Game, PlayerPoints } from "../types";
 
 const TOP_PLAYERS = 15;
@@ -40,14 +41,16 @@ export function Dashboard({
     performers = <PlayerRows players={top} onSelect={onSelectPlayer} showRank />;
   }
 
+  const words = slateWords(games.data?.[0]?.gameDate);
+
   return (
     <>
       <div className="hero">
-        <h1>Tonight's NBA</h1>
+        <h1>{words.hero}</h1>
         <p>Scores, box scores and play-by-play, straight from NBA.com.</p>
       </div>
 
-      <GamesSection games={games} title="Today's games" limit={TOP_GAMES} showAllLink />
+      <GamesSection games={games} title={words.title} limit={TOP_GAMES} showAllLink />
 
       <section className="panel" aria-labelledby="top-heading" aria-busy={players.loading}>
         <SectionHeader

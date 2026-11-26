@@ -6,6 +6,8 @@ export type TeamScore = { teamId: number; tricode: string; score: number };
 export type Game = {
   gameId: string; // string on purpose: IDs have leading zeros ("0022600287")
   status: string; // "Final", "4th Qtr", "10:00 pm ET", ...
+  state: number; // 1 = not started, 2 = live, 3 = final
+  gameDate: string; // "2026-11-25": the day these games were played (latest game day if none today)
   away: TeamScore;
   home: TeamScore;
 };
@@ -46,6 +48,48 @@ export type PlayerCardData = {
   threePointers: string;
   freeThrows: string;
   plusMinus: number;
+};
+
+// GET /api/team_player_points (from Postgres): top single-game scores of the season
+export type TopGame = { player: string; team: string; pts: number };
+
+// GET /api/team_averages (from Postgres): average team points per game
+export type TeamAverage = { full_name: string; pts_per_game: number };
+
+// GET /api/players/search (from the database). "pts" is points per game this season, "pos" is the team.
+export type PlayerSearchResult = PlayerPoints & { pos: string; gp: number };
+
+// GET /api/players/{playerId}/season (from the database)
+export type SeasonCard = {
+  playerId: number;
+  playerName: string;
+  team: string; // most recent team tricode
+  season: string; // "2026-27"
+  seasons: string[]; // every season this player has stats for, newest first
+  through: string | null; // newest game date in the database
+  averages: {
+    gp: number;
+    min: number;
+    pts: number;
+    reb: number;
+    ast: number;
+    stl: number;
+    blk: number;
+    tov: number;
+    fgPct: number | null; // 0..1, null when no attempts
+    fg3Pct: number | null;
+    ftPct: number | null;
+  };
+  lastGames: {
+    date: string;
+    opponent: string | null;
+    home: boolean;
+    result: string | null; // "W" | "L"
+    pts: number;
+    reb: number;
+    ast: number;
+    min: number;
+  }[];
 };
 
 export type FetchState<T> = {

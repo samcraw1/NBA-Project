@@ -768,6 +768,47 @@ a.game-card:hover {
   color: var(--muted);
 }
 
+/* Season section of the player card */
+.card-season-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.card-season-row .card-subtitle {
+  margin: 0;
+}
+
+.mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.mini-table th {
+  padding: 0.3rem 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-align: right;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.mini-table td {
+  padding: 0.45rem 0.4rem;
+  text-align: right;
+  border-top: 1px solid var(--line);
+}
+
+.mini-table th:nth-child(-n + 2),
+.mini-table td:nth-child(-n + 2) {
+  text-align: left;
+}
+
 /* ---------- Coming soon ---------- */
 .soon-grid {
   display: grid;

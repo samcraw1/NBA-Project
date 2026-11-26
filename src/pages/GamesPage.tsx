@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { GamesSection } from "../components/GamesSection";
+import { slateWords } from "../format";
 import type { FetchState, Game } from "../types";
 
 export function GamesPage({ games }: { games: FetchState<Game[]> }) {
@@ -14,7 +15,7 @@ export function GamesPage({ games }: { games: FetchState<Game[]> }) {
 
   return (
     <>
-      <GamesSection games={games} title="All games today" />
+      <GamesSection games={games} title={`All ${slateWords(games.data?.[0]?.gameDate).title.toLowerCase()}`} />
       <section className="panel" aria-labelledby="lookup-heading">
         <div className="section-header">
           <h2 id="lookup-heading">Look up a game by ID</h2>

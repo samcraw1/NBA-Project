@@ -1,14 +1,14 @@
-import glob
 import os
 
 import pandas as pd
 import numpy as np
+import sys
 
 # --- Load ---
-# Reads every season's file at once (season_exports/games_<season>.csv, one per
-# backfilled season) and stacks them into a single DataFrame.
-files = glob.glob("season_exports/games_*.csv")
-df = pd.concat([pd.read_csv(f, dtype={"GAME_ID": str}) for f in files], ignore_index=True)
+# One season per run: `python transform.py 2026-27` reads season_exports/games_2026-27.csv.
+# (Old seasons are already in the database; the load step upserts, so rerunning is safe.)
+season = sys.argv[1] if len(sys.argv) > 1 else "2026-27"
+df = pd.read_csv(f"season_exports/games_{season}.csv", dtype={"GAME_ID": str})
 df.columns = df.columns.str.lower()
 teams_df = pd.read_csv("season_exports/teams.csv")
 players_df = pd.read_csv("season_exports/players.csv")
@@ -31,7 +31,7 @@ df = df.drop(columns=["id", "id_player"])
 # meaning the 2025-26 season). A fixed dict only covered one season; this formula
 # works for any season, which backfilling multiple seasons needs.
 start_year = df["season_id"].astype(str).str[-4:].astype(int)
-df["season"] = start_year.astype(str) + "-" + (start_year + 1).astype(str).str[-2:]
+df["season"] = start_year.astype(str) + "-" + ((start_year + 1) % 100).astype(str).str.zfill(2)
 
 df["game_date"] = pd.to_datetime(df["game_date"])
 
@@ -60,11 +60,11 @@ assert (df.groupby("game_id")["team_id"].nunique() == 2).all(), "a game doesn't 
 
 # --- Write ---
 os.makedirs("processed", exist_ok=True)
-df.to_csv("processed/games_all_seasons.csv", index=False)
+df.to_csv(f"processed/games_{season}.csv", index=False)
 
 games = df[["game_id", "game_date", "season"]].drop_duplicates()
 games.to_csv("processed/games.csv", index=False)
-print(len(games))   # ~1230 per season backfilled
+print(len(games))   # games in this season so far
 
 # Only the player_game_stats table's columns, in the same order as its CREATE TABLE,
 # so \copy can load the file with no column mapping surprises.
@@ -75,4 +75,4 @@ stats = df[[
     "fg_pct", "fg3_pct", "ft_pct", "fantasy_pts",
 ]]
 stats.to_csv("processed/player_game_stats.csv", index=False)
-print(len(stats))   # ~26651 per season backfilled
+print(len(stats))   # player-game rows in this season so far
