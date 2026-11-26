@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from nba_api.live.nba.endpoints import scoreboard, boxscore, playbyplay
+import psycopg
 
 
 app = FastAPI()
@@ -83,6 +84,67 @@ def get_plays(game_id: str):
     except Exception:
         return bad_gateway()
 
+@app.get("/api/leaders")
+def get_leaders():
+    with psycopg.connect("dbname=nba_project") as conn:
+        rows = conn.execute("""
+                select p.full_name, pgs.pts, pgs.game_id
+                from player_game_stats as pgs
+                inner join players as p on pgs.player_id = p.player_id
+                where pts > 25
+                order by pts desc
+                limit 10
+                """).fetchall()
+    return [{"player": r[0], "team": r[1], "pts": r[2]} for r in rows]
+
+@app.get("/api/averages")
+def get_averages():
+    with psycopg.connect("dbname=nba_project") as conn:
+            rows = conn.execute("""
+            select p.full_name, avg(pgs.pts)
+                    from players as p
+                    inner join player_game_stats as pgs on p.player_id = pgs.player_id
+                    group by p.player_id
+                    having count(*) >= 20
+                    order by avg(pgs.pts) desc
+                    limit 10;
+                    """
+                         ).fetchall()
+            return [{"full_name": r[0], "average_points": r[1]} for r in rows]
+
+@app.get("/api/team_averages")
+def get_team_averages():
+    with psycopg.connect ("dbname=nba_project") as conn:
+        rows = conn.execute("""
+                select t.full_name, avg(game_pts) as pts_per_game
+                    from (
+                        select team_id, game_id, sum(pts) as game_pts
+                        from player_game_stats
+                        group by team_id, game_id
+                    ) as tg
+                    inner join teams as t on t.team_id = tg.team_id
+                    group by t.full_name
+                    order by pts_per_game desc;
+                """).fetchall()
+        return [{"full_name": r[0], "pts_per_game": r[1]}for r in rows]
+
+@app.get("/api/team_player_points")
+def get_highest_point_per_team():
+    with psycopg.connect("dbname=nba_project") as conn:
+        rows = conn.execute("""select p.full_name, t.full_name,pgs.pts
+                        from teams as t
+                        inner join player_game_stats as pgs on t.team_id = pgs.team_id
+                        inner join players as p on pgs.player_id = p.player_id
+                        order by pgs.pts desc
+                        limit 10;
+                            """
+
+        ).fetchall()
+        return [{"player": r[0], "team": r[1], "pts": r[2]}for r in rows]
+
+
+
+
 
 @app.get("/api/players/{player_id}")
 def get_player(player_id: int):
@@ -123,4 +185,6 @@ def get_player(player_id: int):
         }
     except Exception:
         return bad_gateway()
+
+
     
