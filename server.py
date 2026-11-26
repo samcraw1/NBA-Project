@@ -3,10 +3,17 @@ from concurrent.futures import ThreadPoolExecutor
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from nba_api.live.nba.endpoints import scoreboard, boxscore, playbyplay
+import os
+
 import psycopg
 
 
 app = FastAPI()
+
+
+def db():
+    # DATABASE_URL points at RDS (or anything else); with it unset we use the local database.
+    return psycopg.connect(os.environ.get("DATABASE_URL", "dbname=nba_project"))
 
 
 def bad_gateway():
@@ -86,7 +93,7 @@ def get_plays(game_id: str):
 
 @app.get("/api/averages")
 def get_averages():
-    with psycopg.connect("dbname=nba_project") as conn:
+    with db() as conn:
             rows = conn.execute("""
             select p.full_name, avg(pgs.pts)
                     from players as p
@@ -101,7 +108,7 @@ def get_averages():
 
 @app.get("/api/team_averages")
 def get_team_averages():
-    with psycopg.connect ("dbname=nba_project") as conn:
+    with db() as conn:
         rows = conn.execute("""
                 select t.full_name, avg(game_pts) as pts_per_game
                     from (
@@ -117,7 +124,7 @@ def get_team_averages():
 
 @app.get("/api/team_player_points")
 def get_highest_point_per_team():
-    with psycopg.connect("dbname=nba_project") as conn:
+    with db() as conn:
         rows = conn.execute("""select p.full_name, t.full_name,pgs.pts
                         from teams as t
                         inner join player_game_stats as pgs on t.team_id = pgs.team_id

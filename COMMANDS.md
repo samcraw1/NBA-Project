@@ -20,6 +20,14 @@ python transform.py   # season_exports -> processed/*.csv (clean, gitignored)
 
 Run `extract.py` first on a fresh checkout. The CSVs are gitignored.
 
+Upload the local files to S3 (safe to rerun; `sync` only copies what changed):
+
+```bash
+export AWS_PROFILE=nba-terraform
+aws s3 sync season_exports s3://nba-project-data-506726968427/raw/
+aws s3 sync processed      s3://nba-project-data-506726968427/processed/
+```
+
 ## App
 
 ```bash
