@@ -220,19 +220,23 @@ def get_team_averages(season: str | None = None):
     with db() as conn:
         season = resolve_season(conn, season)
         rows = conn.execute("""
-            select t.full_name, avg(tg.game_pts) as pts_per_game
-            from (
-                select pgs.team_id, pgs.game_id, sum(pgs.pts) as game_pts
+            with team_game_points as (
+                select pgs.team_id, pgs.game_id, sum(pgs.pts) as team_points
                 from player_game_stats as pgs
                 inner join games as g on pgs.game_id = g.game_id
                 where g.season = %s
                 group by pgs.team_id, pgs.game_id
-            ) as tg
-            inner join teams as t on t.team_id = tg.team_id
-            group by t.full_name
-            order by pts_per_game desc
+            )
+            select
+                t.full_name,
+                avg(tgp.team_points) as pts_per_game,
+                rank() over (order by avg(tgp.team_points) desc) as team_rank
+            from team_game_points as tgp
+            inner join teams as t on t.team_id = tgp.team_id
+            group by t.team_id, t.full_name
+            order by team_rank
         """, (season,)).fetchall()
-        return [{"full_name": r[0], "pts_per_game": r[1]} for r in rows]
+        return [{"full_name": r[0], "pts_per_game": r[1], "team_rank": r[2]} for r in rows]
 
 
 @app.get("/api/team_player_points")
