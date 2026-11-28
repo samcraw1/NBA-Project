@@ -33,4 +33,5 @@ export const endpoints = {
   fantasyLeaders: (season: string) => `/api/fantasy/rolling-averages?season=${encodeURIComponent(season)}`,
   topGames: "/api/team_player_points",
   teamAverages: "/api/team_averages",
+  teamAveragesFor: (season: string) => `/api/team_averages?season=${encodeURIComponent(season)}`,
 };

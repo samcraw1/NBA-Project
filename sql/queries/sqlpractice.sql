@@ -29,27 +29,14 @@ join player_game_stats as pgs on pgs.player_id = p.player_id
 join games as g on pgs.game_id = g.game_id
 where g.season = '2026-27' AND pgs.zero_minutes = FALSE
 and g.game_date <= CURRENT_DATE
-), latest_fantasy as (
-    select
-        player_id,
-        full_name,
-        season,
-        game_date,
-        rolling_5_game_fantasy_avg,
-        row_number() over (
-            partition by player_id
-            order by game_date desc
-        ) as latest_game_rank
-    from average_fantasy
-)
+order by g.season, p.full_name)
 select 
     player_id, 
     full_name, 
     season,
     game_date,
-    rolling_5_game_fantasy_avg
-from latest_fantasy
-where latest_game_rank = 1;
+    rolling_5_game_fantasy_avg  
+from average_fantasy;
 
 
 

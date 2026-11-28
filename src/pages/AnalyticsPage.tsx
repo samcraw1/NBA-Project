@@ -4,6 +4,7 @@ import { SeasonStats } from "../components/SeasonStats";
 import { SectionHeader } from "../components/SectionHeader";
 import { SeasonRankingsPage } from "./SeasonRankingsPage";
 import { FantasyTrendsPage } from "./FantasyTrendsPage";
+import { TeamAnalyticsPage } from "./TeamAnalyticsPage";
 
 export function AnalyticsPage({
   slug,
@@ -14,6 +15,7 @@ export function AnalyticsPage({
 }) {
   if (slug) {
     if (slug === "season-rankings") return <SeasonRankingsPage onSelectPlayer={onSelectPlayer} />;
+    if (slug === "team-analytics") return <TeamAnalyticsPage />;
     if (slug === "fantasy-trends") return <FantasyTrendsPage onSelectPlayer={onSelectPlayer} />;
     const feature = ANALYTICS_FEATURES.find((f) => f.slug === slug);
     if (feature) return <ComingSoonDetail feature={feature} />;
@@ -24,11 +26,11 @@ export function AnalyticsPage({
       <SectionHeader id="analytics-heading" title="Analytics" />
       <p className="lead">
         Season stats below come from the project's PostgreSQL database, so they show even on days
-        with no games. The sections after them still need more pipeline work and are marked coming soon.
+        with no games.
       </p>
       <SeasonStats />
       <div className="soon-grid">
-        {ANALYTICS_FEATURES.map((f) => (
+        {ANALYTICS_FEATURES.filter((f) => f.needs.length === 0).map((f) => (
           <ComingSoonCard key={f.slug} feature={f} />
         ))}
       </div>

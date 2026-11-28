@@ -441,26 +441,32 @@ def get_fantasy_rolling_averages(season: str | None = None):
 
 @app.get("/api/team_averages")
 def get_team_averages(season: str | None = None):
+    # Two levels: sum points per team per game, then average those per team (the grain matters).
     with db() as conn:
         season = resolve_season(conn, season)
         rows = conn.execute("""
             with team_game_points as (
-                select pgs.team_id, pgs.game_id, sum(pgs.pts) as team_points
-                from player_game_stats as pgs
-                inner join games as g on pgs.game_id = g.game_id
+                select t.team_id, t.full_name, g.game_id, sum(pgs.pts) as team_points
+                from teams as t
+                join player_game_stats as pgs on pgs.team_id = t.team_id
+                join games as g on g.game_id = pgs.game_id
                 where g.season = %s
-                group by pgs.team_id, pgs.game_id
+                group by t.team_id, t.full_name, g.game_id
             )
             select
-                t.full_name,
+                tgp.team_id,
+                tgp.full_name,
                 avg(tgp.team_points) as pts_per_game,
+                count(*) as games,
                 rank() over (order by avg(tgp.team_points) desc) as team_rank
             from team_game_points as tgp
-            inner join teams as t on t.team_id = tgp.team_id
-            group by t.team_id, t.full_name
+            group by tgp.team_id, tgp.full_name
             order by team_rank
         """, (season,)).fetchall()
-        return [{"full_name": r[0], "pts_per_game": r[1], "team_rank": r[2]} for r in rows]
+        return [
+            {"team_id": r[0], "full_name": r[1], "pts_per_game": r[2], "games": r[3], "team_rank": r[4]}
+            for r in rows
+        ]
 
 
 @app.get("/api/team_player_points")

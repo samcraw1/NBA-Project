@@ -57,7 +57,13 @@ export type PlayerCardData = {
 export type TopGame = { player: string; team: string; pts: number };
 
 // GET /api/team_averages (from Postgres): average team points per game
-export type TeamAverage = { full_name: string; pts_per_game: number };
+export type TeamAverage = {
+  team_id: number;
+  full_name: string;
+  pts_per_game: number;
+  games: number;
+  team_rank: number;
+};
 
 // GET /api/averages: player season scoring rank, calculated from game logs
 export type SeasonScoringLeader = {

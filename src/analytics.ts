@@ -36,8 +36,8 @@ export const ANALYTICS_FEATURES: AnalyticsFeature[] = [
   {
     slug: "team-analytics",
     title: "Team analytics",
-    summary: "Team scoring, pace and results over a season.",
-    needs: ["Team-game stats in the database", "Team list and team stats endpoints"],
+    summary: "All 30 teams ranked by points per game this season.",
+    needs: [],
   },
   {
     slug: "player-comparison",
