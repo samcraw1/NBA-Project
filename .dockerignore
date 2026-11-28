@@ -1,0 +1,4 @@
+*
+!Dockerfile
+!requirements-api.txt
+!server.py

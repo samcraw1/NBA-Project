@@ -6,7 +6,7 @@ import { PlayerRows } from "../components/PlayerRows";
 import { EmptyState, ErrorState, SkeletonRows } from "../components/StateMessage";
 import { gameState } from "../format";
 import { useFetch } from "../hooks/useFetch";
-import type { FetchState, Game, GamePlayer, Play } from "../types";
+import type { FetchState, Game, GamePlayer, GamePlayerRanking, Play } from "../types";
 
 type Tab = "box" | "plays";
 
@@ -22,6 +22,7 @@ export function GamePage({
   const [tab, setTab] = useState<Tab>("box");
   const box = useFetch<GamePlayer[]>(endpoints.game(gameId));
   const plays = useFetch<Play[]>(endpoints.plays(gameId));
+  const rankings = useFetch<GamePlayerRanking[]>(endpoints.gamePlayerRankings(gameId));
 
   // The score header comes from the games list when this game is on today's board.
   const game = games.data?.find((g) => g.gameId === gameId);
@@ -51,9 +52,30 @@ export function GamePage({
       <ErrorState message="Can't load the play-by-play for this game." onRetry={plays.reload} />
     );
   } else if (!plays.data || plays.data.length === 0) {
-    playsBody = <EmptyState message="No plays yet. The game hasn't started." />;
+    playsBody = <EmptyState message="Play-by-play isn't stored in the project database." />;
   } else {
     playsBody = <PlayByPlay plays={plays.data} />;
+  }
+
+  const rankedPlayers = (rankings.data ?? []).map((player) => ({
+    ...player,
+    rank: player.gameRank,
+  }));
+
+  let rankingsBody;
+  if (rankings.loading) {
+    rankingsBody = <SkeletonRows count={8} />;
+  } else if (rankings.error) {
+    rankingsBody = (
+      <ErrorState
+        message="Couldn't load the database rankings for this game."
+        onRetry={rankings.reload}
+      />
+    );
+  } else if (rankedPlayers.length === 0) {
+    rankingsBody = <EmptyState message="No player stats for this game are loaded in PostgreSQL yet." />;
+  } else {
+    rankingsBody = <PlayerRows players={rankedPlayers} onSelect={onSelectPlayer} showRank />;
   }
 
   return (
@@ -104,6 +126,14 @@ export function GamePage({
             FRONTEND_REQUIREMENTS.md). Tap a player for their full line.
           </p>
         )}
+      </section>
+
+      <section className="panel" aria-labelledby="game-player-rankings-heading">
+        <h3 id="game-player-rankings-heading" className="card-subtitle">
+          Player scoring ranks
+        </h3>
+        <p className="note">Ranked by points from the PostgreSQL game stats.</p>
+        {rankingsBody}
       </section>
     </>
   );

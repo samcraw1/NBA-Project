@@ -2,7 +2,7 @@ import { headshot, showSilhouette } from "../format";
 import type { PlayerPoints } from "../types";
 
 // Works for both /api/players rows and /api/games/{id} rows (which add pos and played).
-export type RowPlayer = PlayerPoints & { pos?: string | null; played?: boolean };
+export type RowPlayer = PlayerPoints & { pos?: string | null; played?: boolean; rank?: number };
 
 export function PlayerRows({
   players,
@@ -18,7 +18,7 @@ export function PlayerRows({
     <ul className="rows">
       {players.map((p, i) => (
         <li className="row" key={`${p.playerId}-${i}`}>
-          {showRank && <span className="rank">{i + 1}</span>}
+          {showRank && <span className="rank">{p.rank ?? i + 1}</span>}
           <img
             className="thumb"
             src={headshot(p.playerId, "260x190")}

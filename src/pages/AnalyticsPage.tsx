@@ -2,9 +2,19 @@ import { ANALYTICS_FEATURES } from "../analytics";
 import { ComingSoonCard, ComingSoonDetail } from "../components/ComingSoon";
 import { SeasonStats } from "../components/SeasonStats";
 import { SectionHeader } from "../components/SectionHeader";
+import { SeasonRankingsPage } from "./SeasonRankingsPage";
+import { FantasyTrendsPage } from "./FantasyTrendsPage";
 
-export function AnalyticsPage({ slug }: { slug?: string }) {
+export function AnalyticsPage({
+  slug,
+  onSelectPlayer,
+}: {
+  slug?: string;
+  onSelectPlayer: (playerId: number) => void;
+}) {
   if (slug) {
+    if (slug === "season-rankings") return <SeasonRankingsPage onSelectPlayer={onSelectPlayer} />;
+    if (slug === "fantasy-trends") return <FantasyTrendsPage onSelectPlayer={onSelectPlayer} />;
     const feature = ANALYTICS_FEATURES.find((f) => f.slug === slug);
     if (feature) return <ComingSoonDetail feature={feature} />;
   }

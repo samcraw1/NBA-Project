@@ -21,6 +21,9 @@ export type GamePlayer = PlayerPoints & {
   played: boolean;
 };
 
+// GET /api/games/{gameId}/player-rankings (from PostgreSQL)
+export type GamePlayerRanking = PlayerPoints & { gameId: string; gameRank: number };
+
 // GET /api/games/{gameId}/plays
 export type Play = {
   period: number;
@@ -55,6 +58,24 @@ export type TopGame = { player: string; team: string; pts: number };
 
 // GET /api/team_averages (from Postgres): average team points per game
 export type TeamAverage = { full_name: string; pts_per_game: number };
+
+// GET /api/averages: player season scoring rank, calculated from game logs
+export type SeasonScoringLeader = {
+  player_id?: number;
+  full_name: string;
+  season: string;
+  average_points: number;
+  average_rank?: number;
+};
+
+export type FantasyTrendLeader = {
+  player_id: number;
+  full_name: string;
+  season: string;
+  game_date: string;
+  rolling_5_game_fantasy_avg: number;
+};
+
 
 // GET /api/players/search (from the database). "pts" is points per game this season, "pos" is the team.
 export type PlayerSearchResult = PlayerPoints & { pos: string; gp: number };

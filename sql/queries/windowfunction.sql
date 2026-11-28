@@ -1,9 +1,14 @@
-select p.full_name, pgs.pts, pgs.game_id,
-      rank() over (order by pgs.pts desc) as
-  pts_rank
-  from player_game_stats as pgs
-  inner join players as p on pgs.player_id =
-  p.player_id;
+select
+    p.player_id,
+    p.full_name,
+    pgs.game_id,
+    pgs.pts,
+    rank() over (
+        partition by pgs.game_id
+        order by pgs.pts desc
+    ) as game_rank
+from player_game_stats as pgs
+inner join players as p on p.player_id = pgs.player_id;
 
 
 select player_id, game_id, pts,

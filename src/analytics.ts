@@ -18,8 +18,14 @@ export const ANALYTICS_FEATURES: AnalyticsFeature[] = [
   {
     slug: "season-rankings",
     title: "Season rankings",
-    summary: "League leaders by points, rebounds, assists and more.",
-    needs: ["Season aggregates in the database", "A leaders endpoint with stat and season filters"],
+    summary: "2026-27 league scoring leaders ranked by points per game.",
+    needs: [],
+  },
+  {
+    slug: "fantasy-trends",
+    title: "Fantasy points trends",
+    summary: "Each player's latest rolling five-game fantasy average for 2026-27.",
+    needs: [],
   },
   {
     slug: "player-trends",

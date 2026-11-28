@@ -47,7 +47,7 @@ export function Dashboard({
     <>
       <div className="hero">
         <h1>{words.hero}</h1>
-        <p>Scores, box scores and play-by-play, straight from NBA.com.</p>
+        <p>Game scores, player stats and season analytics from the project database.</p>
       </div>
 
       <GamesSection games={games} title={words.title} limit={TOP_GAMES} showAllLink />
@@ -76,7 +76,7 @@ export function Dashboard({
           }
         />
         <div className="soon-grid">
-          {ANALYTICS_FEATURES.slice(0, 3).map((f) => (
+          {ANALYTICS_FEATURES.slice(0, 4).map((f) => (
             <ComingSoonCard key={f.slug} feature={f} />
           ))}
         </div>

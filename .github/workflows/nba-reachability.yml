@@ -1,0 +1,25 @@
+# Throwaway check: can GitHub's runners reach stats.nba.com? (AWS IPs time out.)
+# Run it by hand from the Actions tab. It only reads data; it changes nothing.
+name: nba-reachability
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install nba_api==1.12.0
+      - name: Fetch the 2026-27 game log from stats.nba.com
+        run: |
+          python - <<'PY'
+          from nba_api.stats.endpoints import leaguegamelog
+          df = leaguegamelog.LeagueGameLog(
+              season="2026-27", player_or_team_abbreviation="P", timeout=30
+          ).get_data_frames()[0]
+          print("rows:", len(df), "newest game:", df["GAME_DATE"].max())
+          PY

@@ -52,7 +52,7 @@ export default function App() {
   } else if (section === "players") {
     page = <PlayersPage onSelectPlayer={setSelectedPlayer} />;
   } else if (section === "analytics") {
-    page = <AnalyticsPage slug={param} />;
+    page = <AnalyticsPage slug={param} onSelectPlayer={setSelectedPlayer} />;
   } else {
     page = (
       <section className="panel">
@@ -69,8 +69,8 @@ export default function App() {
       <Header route={route} theme={theme} onToggleTheme={toggle} />
       <main className="page">{page}</main>
       <footer className="footer">
-        Live data from NBA.com's public endpoints. An unofficial learning project, not affiliated
-        with the NBA.
+        NBA stats for this project are stored in PostgreSQL. Unofficial learning project, not
+        affiliated with the NBA.
       </footer>
       {selectedPlayer !== null && (
         <PlayerCardModal

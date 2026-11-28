@@ -1,6 +1,19 @@
-# Handoff: where the project is (2026-11-26)
+# Handoff: where the project is (2026-11-28)
 
-Written for an agent catching up. Everything here was run and checked on 2026-11-26 unless marked **not tested**.
+## Hosting update (2026-11-28)
+
+- Amplify frontend: https://main.d2qpjzugpcgewv.amplifyapp.com
+- ECS Express API: https://nb-5686130c8fd74b6396787bddc1ee8f70.ecs.us-east-1.on.aws (`nba-project-api-clean`)
+- The API runs the known-good `portfolio-20261127-fix2` image on Fargate (0.25 vCPU, 0.5 GB), reads the existing RDS database through its Secrets Manager master secret, uses `/health` for the ALB check, and has `NBA_LIVE_ENABLED=false`. ECS reports one desired and one running task with a completed deployment. Its rollback alarm is `OK`, and the ALB rule sends 100% of production traffic to the healthy target group.
+- `/health`, `/api/games`, and `/api/seasons` returned HTTP 200; `/api/games` returned 9 rows. The production browser loaded the Amplify site and its `/api/games` and `/api/players` requests returned HTTP 200 with the expected CORS origin.
+- The replacement API has a new generated hostname. Amplify was manually redeployed as job 3 with the new `VITE_API_BASE_URL`; `.env.production` records the same URL for future Vite builds.
+- The inconsistent `nba-project-api` ECS Express service was deleted after cutover. ECS now reports it `INACTIVE` with zero tasks; its old rollback alarm and target groups were removed. The replacement service has one active target group at 100% weight; its second canary target group remains attached at 0% weight.
+- RDS and Amplify were retained. The RDS security group permits PostgreSQL from the dedicated ECS task security group as well as the existing individual IP rule. No RDS instance modification was made.
+- Terraform manages Amplify, ECR, ECS roles, the API log group and ECS task security-group access. ECS Express service creation/deletion used AWS CLI because the pinned Terraform AWS provider does not expose this operation. Terraform outputs `api_service_name`, `api_service_arn`, and `api_service_url` describe the active replacement. The output-only Terraform apply changed no cloud resources.
+- Container fixes made during deployment: `nba_api` dependency is pinned to 1.12.0 (the prior 1.10.2 lacked `scoreboardv3`); `DATABASE_HOST` and `DATABASE_PORT` are passed separately because the RDS managed secret contains only username/password.
+- ECS Express runs one 0.25 vCPU / 0.5 GB task plus a public ALB. Estimated baseline is about $25–32/month before variable traffic, in addition to existing RDS.
+
+Written for an agent catching up. The project notes below summarize work checked through 2026-11-28 unless marked **not tested**.
 No secrets, passwords, emails, IP addresses or secret ARNs are in this file. Get the RDS hostname with
 `cd infrastructure && AWS_PROFILE=nba-terraform terraform output rds_endpoint`.
 
@@ -38,7 +51,7 @@ covered players in those games. The database was a frozen snapshot of 2025-26 (l
 ## 3. Where things are right now
 | Thing | State |
 |---|---|
-| App | Backend `uvicorn server:app --port 3001 --reload`, frontend `npm run dev` on 5173 (Vite proxies `/api` to 3001). **Reads local Postgres.** |
+| App | Production frontend is on Amplify and uses the ECS Express API above. The API reads the existing RDS database. Local development remains available with `uvicorn server:app --port 3001 --reload` and `npm run dev`. |
 | Local Postgres `nba_project` | 2025-26 + 2026-27: 1,500 games, 32,683 player-game rows, newest game 2026-11-25 |
 | RDS `nba-project` | Same data as local (loaded 2026-11-26, ~5 min). `db.t4g.micro`, PG 14.22, 20 GB, single-AZ, encrypted, public but locked to one IP, no deletion protection, 1-day backups. About $15/month while running. |
 | S3 `nba-project-data-506726968427` | Private, AES256, no versioning. `raw/` (CSVs), `processed/{games,games_2025-26,games_2026-27,player_game_stats}/`, `athena-results/`, `practice/`. Both seasons are uploaded (2026-27 files carry a `_2026-27` suffix so they never overwrite 2025-26; uploaded with `s3practice.py`). |
@@ -68,7 +81,7 @@ security group + subnet group, Lambda + role/policy + layer, EventBridge rule/ta
 2. The user wants to write a daily scheduler themselves later: cron/launchd or GitHub Actions running `refresh.py`, off AWS. Actions would need DB credentials as secrets and RDS reachable from GitHub.
 3. The 30 s live refresh is **not tested** with a real in-progress game.
 4. The SQL behind player search and the season card was written by Claude. Offer it to the user as a rewrite exercise (`distinct on`, `lateral`).
-5. Learning roadmap: CTEs and window functions, Athena tables for games/players, Glue + PySpark (not started), CloudWatch alarms, Step Functions only if it earns its place.
+5. Learning roadmap: CTEs and window functions, Athena tables for games/players, Glue + PySpark (practice job exists), CloudWatch alarms, Step Functions only if it earns its place. The ECS Express replacement and alarm recovery completed on 2026-11-28 (see Hosting update above).
 6. Nothing from 2026-11-26 is committed. Ask before committing or pushing.
 
 ## 6. Commands

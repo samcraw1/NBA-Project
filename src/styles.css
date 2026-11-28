@@ -832,6 +832,10 @@ a.game-card:hover {
   border-color: var(--accent);
 }
 
+.available-card {
+  border-style: solid;
+}
+
 .soon-card h3 {
   font-size: 1.3rem;
   font-weight: 600;

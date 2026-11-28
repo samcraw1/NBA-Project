@@ -1,4 +1,5 @@
 import logging
+import json
 import os
 import time
 import unicodedata
@@ -7,6 +8,7 @@ from datetime import date, timedelta
 
 import psycopg
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from nba_api.live.nba.endpoints import scoreboard, boxscore, playbyplay
 from nba_api.stats.endpoints import scoreboardv3
@@ -16,10 +18,105 @@ log = logging.getLogger("uvicorn.error")
 
 app = FastAPI()
 
+frontend_origin = os.environ.get("FRONTEND_ORIGIN")
+if frontend_origin:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[frontend_origin],
+        allow_methods=["GET"],
+        allow_headers=["*"]
+    )
+
+NBA_LIVE_ENABLED = os.environ.get("NBA_LIVE_ENABLED", "true").lower() == "true"
+# Walking back to "last night" uses stats.nba.com, which times out from AWS. On AWS set this to false:
+# an empty slate then falls back to the database, which the daily refresh keeps current.
+NBA_LOOKBACK_ENABLED = os.environ.get("NBA_LOOKBACK_ENABLED", "true").lower() == "true"
+
 
 def db():
     # DATABASE_URL points at RDS (or anything else); with it unset we use the local database.
-    return psycopg.connect(os.environ.get("DATABASE_URL", "dbname=nba_project"))
+    database_url = os.environ.get("DATABASE_URL")
+    if database_url:
+        return psycopg.connect(database_url)
+
+    secret_value = os.environ.get("DATABASE_SECRET")
+    if secret_value:
+        secret = json.loads(secret_value)
+        return psycopg.connect(
+            host=os.environ.get("DATABASE_HOST", secret.get("host")),
+            port=int(os.environ.get("DATABASE_PORT", secret.get("port", 5432))),
+            dbname=os.environ.get("DATABASE_NAME", "nba_project"),
+            user=secret["username"],
+            password=secret["password"],
+            sslmode="require",
+            connect_timeout=5,
+        )
+
+    return psycopg.connect("dbname=nba_project")
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+def database_games():
+    with db() as conn:
+        rows = conn.execute("""
+            select g.game_id, g.game_date, pgs.team_id, t.abbreviation,
+                   bool_or(pgs.is_home) as is_home, sum(pgs.pts) as score
+            from games as g
+            inner join player_game_stats as pgs on pgs.game_id = g.game_id
+            inner join teams as t on t.team_id = pgs.team_id
+            where g.game_date = (select max(game_date) from games)
+            group by g.game_id, g.game_date, pgs.team_id, t.abbreviation
+            order by g.game_id, is_home
+        """).fetchall()
+
+    games = {}
+    for game_id, game_date, team_id, tricode, is_home, score in rows:
+        game = games.setdefault(game_id, {
+            "gameId": game_id,
+            "status": "Final",
+            "state": FINAL,
+            "gameDate": game_date.isoformat(),
+        })
+        game["home" if is_home else "away"] = {
+            "teamId": team_id,
+            "tricode": tricode,
+            "score": int(score or 0),
+        }
+    return [game for game in games.values() if "home" in game and "away" in game]
+
+
+def database_players():
+    with db() as conn:
+        rows = conn.execute("""
+            select p.player_id, p.full_name, pgs.pts
+            from player_game_stats as pgs
+            inner join players as p on p.player_id = pgs.player_id
+            inner join games as g on g.game_id = pgs.game_id
+            where g.game_date = (select max(game_date) from games)
+            order by pgs.pts desc, p.full_name
+            limit 30
+        """).fetchall()
+    return [{"playerId": r[0], "playerName": r[1], "pts": r[2] or 0} for r in rows]
+
+
+def database_game_players(game_id):
+    with db() as conn:
+        rows = conn.execute("""
+            select p.player_id, p.full_name, pgs.pts, pgs.zero_minutes
+            from player_game_stats as pgs
+            inner join players as p on p.player_id = pgs.player_id
+            where pgs.game_id = %s
+            order by pgs.pts desc, p.full_name
+        """, (game_id,)).fetchall()
+    return [
+        {"playerId": r[0], "playerName": r[1], "pts": r[2] or 0,
+         "pos": None, "played": not r[3]}
+        for r in rows
+    ]
 
 
 def bad_gateway():
@@ -54,7 +151,7 @@ def fetch_slate():
     today = scoreboard.ScoreBoard().get_dict()["scoreboard"]
     today_date, games = date.fromisoformat(today["gameDate"]), today["games"]
     day = today_date
-    for _ in range(LOOKBACK_DAYS):
+    for _ in range(LOOKBACK_DAYS if NBA_LOOKBACK_ENABLED else 0):
         if games:
             break
         day -= timedelta(days=1)
@@ -100,56 +197,80 @@ def get_slate_boxes():
 
 @app.get("/api/games")
 def get_games():
+    # Live from NBA.com first. If it is off, down, or has no games, show the database's latest day.
+    if NBA_LIVE_ENABLED:
+        try:
+            slate = get_slate()
+            if slate["games"]:
+                return [
+                    {
+                        "gameId": g["gameId"],
+                        "status": g["gameStatusText"].strip(),
+                        "state": g["gameStatus"],
+                        "gameDate": slate["date"],
+                        "away": {"teamId": g["awayTeam"]["teamId"], "tricode": g["awayTeam"]["teamTricode"], "score": g["awayTeam"]["score"]},
+                        "home": {"teamId": g["homeTeam"]["teamId"], "tricode": g["homeTeam"]["teamTricode"], "score": g["homeTeam"]["score"]},
+                    }
+                    for g in slate["games"]
+                ]
+        except Exception as err:
+            log.warning("live games failed, using database: %s", err)
     try:
-        slate = get_slate()
-        return [
-            {
-                "gameId": g["gameId"],
-                "status": g["gameStatusText"].strip(),
-                "state": g["gameStatus"],
-                "gameDate": slate["date"],
-                "away": {"teamId": g["awayTeam"]["teamId"], "tricode": g["awayTeam"]["teamTricode"], "score": g["awayTeam"]["score"]},
-                "home": {"teamId": g["homeTeam"]["teamId"], "tricode": g["homeTeam"]["teamTricode"], "score": g["homeTeam"]["score"]},
-            }
-            for g in slate["games"]
-        ]
-    except Exception:
-        return bad_gateway()
+        return database_games()
+    except Exception as err:
+        log.warning("database games query failed: %s", err)
+        return JSONResponse(status_code=502, content={"error": "could not read game data"})
 
 
 @app.get("/api/players")
 def get_players():
+    if NBA_LIVE_ENABLED:
+        try:
+            players = [
+                {"playerId": p["personId"], "playerName": p["name"], "pts": p["statistics"]["points"]}
+                for b in get_slate_boxes()
+                for p in b["game"]["homeTeam"]["players"] + b["game"]["awayTeam"]["players"]
+            ]
+            if players:
+                return players
+        except Exception as err:
+            log.warning("live players failed, using database: %s", err)
     try:
-        return [
-            {"playerId": p["personId"], "playerName": p["name"], "pts": p["statistics"]["points"]}
-            for b in get_slate_boxes()
-            for p in b["game"]["homeTeam"]["players"] + b["game"]["awayTeam"]["players"]
-        ]
-    except Exception:
-        return bad_gateway()
+        return database_players()
+    except Exception as err:
+        log.warning("database players query failed: %s", err)
+        return JSONResponse(status_code=502, content={"error": "could not read player data"})
 
 
 @app.get("/api/games/{gameId}")
 def get_game(gameId: str):
+    if NBA_LIVE_ENABLED:
+        try:
+            box = get_boxscore(gameId)
+            players = box["game"]["homeTeam"]["players"] + box["game"]["awayTeam"]["players"]
+            return [
+                {
+                    "playerId": p["personId"],
+                    "playerName": p["name"],
+                    "pts": p["statistics"]["points"],
+                    "pos": p.get("position"),
+                    "played": p["played"] == "1"
+                }
+                for p in players
+            ]
+        except Exception as err:
+            log.warning("live box score failed, using database: %s", err)
     try:
-        box = get_boxscore(gameId)
-        players = box["game"]["homeTeam"]["players"] + box["game"]["awayTeam"]["players"]
-        return [
-            {
-                "playerId": p["personId"],
-                "playerName": p["name"],
-                "pts": p["statistics"]["points"],
-                "pos": p.get("position"),
-                "played": p["played"] == "1"
-            }
-            for p in players
-        ]
-    except Exception:
-        return bad_gateway()
+        return database_game_players(gameId)
+    except Exception as err:
+        log.warning("database box score query failed: %s", err)
+        return JSONResponse(status_code=502, content={"error": "could not read box score"})
 
 
 @app.get("/api/games/{game_id}/plays")
 def get_plays(game_id: str):
+    if not NBA_LIVE_ENABLED:
+        return []
     try:
         pbp = playbyplay.PlayByPlay(game_id).get_dict()
         return [
@@ -163,6 +284,36 @@ def get_plays(game_id: str):
         ]
     except Exception:
         return bad_gateway()
+
+
+@app.get("/api/games/{game_id}/player-rankings")
+def get_game_player_rankings(game_id: str):
+    with db() as conn:
+        rows = conn.execute("""
+            select
+                p.player_id,
+                p.full_name,
+                pgs.game_id,
+                pgs.pts,
+                rank() over (
+                    partition by pgs.game_id
+                    order by pgs.pts desc
+                ) as game_rank
+            from player_game_stats as pgs
+            inner join players as p on p.player_id = pgs.player_id
+            where pgs.game_id = %s
+            order by game_rank, p.full_name
+        """, (game_id,)).fetchall()
+        return [
+            {
+                "playerId": row[0],
+                "playerName": row[1],
+                "gameId": row[2],
+                "pts": row[3],
+                "gameRank": row[4],
+            }
+            for row in rows
+        ]
 
 def resolve_season(conn, season):
     # No season given -> use the newest one in the database.
@@ -202,17 +353,90 @@ def get_averages(season: str | None = None, min_games: int | None = None):
         if min_games is None:
             min_games = default_min_games(conn, season)
         rows = conn.execute("""
-            select p.full_name, avg(pgs.pts)
-            from players as p
-            inner join player_game_stats as pgs on p.player_id = pgs.player_id
-            inner join games as g on pgs.game_id = g.game_id
-            where g.season = %s
-            group by p.player_id
-            having count(*) >= %s
-            order by avg(pgs.pts) desc
+            with average_ppg as (
+                select
+                    p.player_id,
+                    p.full_name,
+                    g.season,
+                    avg(pgs.pts) as ppg
+                from players as p
+                inner join player_game_stats as pgs on pgs.player_id = p.player_id
+                inner join games as g on pgs.game_id = g.game_id
+                where g.season = %s
+                group by p.player_id, p.full_name, g.season
+                having count(*) >= %s
+            )
+            select
+                player_id,
+                full_name,
+                season,
+                ppg,
+                rank() over (partition by season order by ppg desc) as average_rank
+            from average_ppg
+            order by season, average_rank
             limit 10
         """, (season, min_games)).fetchall()
-        return [{"full_name": r[0], "average_points": r[1]} for r in rows]
+        return [
+            {"player_id": r[0], "full_name": r[1], "season": r[2], "average_points": r[3], "average_rank": r[4]}
+            for r in rows
+        ]
+
+
+@app.get("/api/fantasy/rolling-averages")
+def get_fantasy_rolling_averages(season: str | None = None):
+    with db() as conn:
+        season = resolve_season(conn, season)
+        rows = conn.execute("""
+            with average_fantasy as (
+                select
+                    p.player_id,
+                    p.full_name,
+                    g.season,
+                    g.game_date,
+                    avg(pgs.fantasy_pts) over (
+                        partition by p.player_id
+                        order by g.game_date
+                        rows between 4 preceding and current row
+                    ) as rolling_5_game_fantasy_avg
+                from players as p
+                inner join player_game_stats as pgs on pgs.player_id = p.player_id
+                inner join games as g on pgs.game_id = g.game_id
+                where g.season = %s
+                  and pgs.zero_minutes = false
+                  and g.game_date <= current_date
+            ), latest_fantasy as (
+                select
+                    player_id,
+                    full_name,
+                    season,
+                    game_date,
+                    rolling_5_game_fantasy_avg,
+                    row_number() over (
+                        partition by player_id
+                        order by game_date desc
+                    ) as latest_game_rank
+                from average_fantasy
+            )
+            select
+                player_id,
+                full_name,
+                season,
+                game_date,
+                rolling_5_game_fantasy_avg
+            from latest_fantasy
+            where latest_game_rank = 1
+            order by rolling_5_game_fantasy_avg desc
+        """, (season,)).fetchall()
+        return [
+            {
+                "player_id": r[0],
+                "full_name": r[1],
+                "season": r[2],
+                "game_date": r[3],
+                "rolling_5_game_fantasy_avg": r[4],
+            }
+            for r in rows
+        ]
 
 
 @app.get("/api/team_averages")

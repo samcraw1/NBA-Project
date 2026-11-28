@@ -29,7 +29,7 @@ export function GamesSection({
   } else if (games.error) {
     body = (
       <ErrorState
-        message="Can't load games. NBA.com may be blocking requests, so try again in a minute."
+        message="Can't load game data. Check the connection and try again."
         onRetry={games.reload}
       />
     );
