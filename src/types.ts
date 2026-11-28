@@ -83,6 +83,14 @@ export type FantasySeasonLeader = {
   fantasy_rank: number;
 };
 
+export type FantasySeasonTotal = {
+  player_id: number;
+  full_name: string;
+  season: string;
+  total_points: number;
+  games: number;
+};
+
 export type FantasyTrendLeader = {
   player_id: number;
   full_name: string;

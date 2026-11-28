@@ -34,6 +34,12 @@ export const ANALYTICS_FEATURES: AnalyticsFeature[] = [
     needs: [],
   },
   {
+    slug: "fantasy-totals",
+    title: "Fantasy totals",
+    summary: "Total fantasy points scored so far this season, highest first.",
+    needs: [],
+  },
+  {
     slug: "player-trends",
     title: "Player performance trends",
     summary: "Rolling averages and consistency over a player's recent games.",

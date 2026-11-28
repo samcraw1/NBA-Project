@@ -6,6 +6,7 @@ import { SeasonRankingsPage } from "./SeasonRankingsPage";
 import { FantasyTrendsPage } from "./FantasyTrendsPage";
 import { TeamAnalyticsPage } from "./TeamAnalyticsPage";
 import { FantasyRankingsPage } from "./FantasyRankingsPage";
+import { FantasyTotalsPage } from "./FantasyTotalsPage";
 
 export function AnalyticsPage({
   slug,
@@ -16,6 +17,7 @@ export function AnalyticsPage({
 }) {
   if (slug) {
     if (slug === "season-rankings") return <SeasonRankingsPage onSelectPlayer={onSelectPlayer} />;
+    if (slug === "fantasy-totals") return <FantasyTotalsPage onSelectPlayer={onSelectPlayer} />;
     if (slug === "fantasy-rankings") return <FantasyRankingsPage onSelectPlayer={onSelectPlayer} />;
     if (slug === "team-analytics") return <TeamAnalyticsPage />;
     if (slug === "fantasy-trends") return <FantasyTrendsPage onSelectPlayer={onSelectPlayer} />;

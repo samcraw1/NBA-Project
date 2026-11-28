@@ -422,6 +422,29 @@ def get_fantasy_season_rankings(season: str | None = None, min_games: int | None
         ]
 
 
+@app.get("/api/fantasy/season-totals")
+def get_fantasy_season_totals(season: str | None = None):
+    # Total fantasy points per player for one season. Games a player sat out add nothing to a sum,
+    # so unlike the averages there is no minimum-games rule here.
+    with db() as conn:
+        season = resolve_season(conn, season)
+        rows = conn.execute("""
+            select p.player_id, p.full_name, g.season,
+                   sum(pgs.fantasy_pts) as total_points, count(*) filter (where pgs.zero_minutes = false) as games
+            from players as p
+            join player_game_stats as pgs on pgs.player_id = p.player_id
+            join games as g on g.game_id = pgs.game_id
+            where g.season = %s
+            group by p.player_id, p.full_name, g.season
+            order by total_points desc nulls last, p.full_name
+            limit 50
+        """, (season,)).fetchall()
+        return [
+            {"player_id": r[0], "full_name": r[1], "season": r[2], "total_points": r[3], "games": r[4]}
+            for r in rows
+        ]
+
+
 @app.get("/api/fantasy/rolling-averages")
 def get_fantasy_rolling_averages(season: str | None = None):
     with db() as conn:
