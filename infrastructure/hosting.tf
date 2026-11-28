@@ -6,7 +6,7 @@
 variable "api_image_tag" {
   description = "Immutable ECR tag for this portfolio deployment."
   type        = string
-  default     = "portfolio-20261128-teams"
+  default     = "portfolio-20261128-fantasy"
 }
 
 resource "aws_ecr_repository" "api" {

@@ -74,6 +74,15 @@ export type SeasonScoringLeader = {
   average_rank?: number;
 };
 
+export type FantasySeasonLeader = {
+  player_id: number;
+  full_name: string;
+  season: string;
+  avg_fantasy_pts: number;
+  games: number;
+  fantasy_rank: number;
+};
+
 export type FantasyTrendLeader = {
   player_id: number;
   full_name: string;

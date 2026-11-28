@@ -382,6 +382,46 @@ def get_averages(season: str | None = None, min_games: int | None = None):
         ]
 
 
+@app.get("/api/fantasy/season-rankings")
+def get_fantasy_season_rankings(season: str | None = None, min_games: int | None = None):
+    # Season average fantasy points per player, ranked within the season. Games with zero
+    # minutes (DNPs) are left out, and so are players with too few games to rank fairly.
+    with db() as conn:
+        season = resolve_season(conn, season)
+        if min_games is None:
+            min_games = default_min_games(conn, season)
+        rows = conn.execute("""
+            with player_season_fantasy as (
+                select p.player_id, p.full_name, g.season,
+                       avg(pgs.fantasy_pts) as avg_fantasy_pts, count(*) as games
+                from players as p
+                join player_game_stats as pgs on pgs.player_id = p.player_id
+                join games as g on g.game_id = pgs.game_id
+                where g.season = %s and pgs.zero_minutes = false
+                group by p.player_id, p.full_name, g.season
+                having count(*) >= %s
+            )
+            select
+                player_id,
+                full_name,
+                season,
+                avg_fantasy_pts,
+                games,
+                rank() over (
+                    partition by season
+                    order by avg_fantasy_pts desc
+                ) as fantasy_rank
+            from player_season_fantasy
+            order by fantasy_rank, full_name
+            limit 50
+        """, (season, min_games)).fetchall()
+        return [
+            {"player_id": r[0], "full_name": r[1], "season": r[2],
+             "avg_fantasy_pts": r[3], "games": r[4], "fantasy_rank": r[5]}
+            for r in rows
+        ]
+
+
 @app.get("/api/fantasy/rolling-averages")
 def get_fantasy_rolling_averages(season: str | None = None):
     with db() as conn:

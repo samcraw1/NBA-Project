@@ -1,8 +1,10 @@
 import { useMemo } from "react";
+import { ComingSoonCard } from "../components/ComingSoon";
 import { GamesSection } from "../components/GamesSection";
 import { PlayerRows } from "../components/PlayerRows";
 import { SectionHeader } from "../components/SectionHeader";
 import { EmptyState, ErrorState, SkeletonRows } from "../components/StateMessage";
+import { ANALYTICS_FEATURES } from "../analytics";
 import { slateWords } from "../format";
 import type { FetchState, Game, PlayerPoints } from "../types";
 
@@ -61,6 +63,23 @@ export function Dashboard({
           }
         />
         {performers}
+      </section>
+
+      <section className="panel" aria-labelledby="soon-heading">
+        <SectionHeader
+          id="soon-heading"
+          title="More analytics"
+          action={
+            <a className="link" href="#/analytics">
+              See what's planned →
+            </a>
+          }
+        />
+        <div className="soon-grid">
+          {ANALYTICS_FEATURES.slice(0, 4).map((f) => (
+            <ComingSoonCard key={f.slug} feature={f} />
+          ))}
+        </div>
       </section>
     </>
   );

@@ -22,6 +22,12 @@ export const ANALYTICS_FEATURES: AnalyticsFeature[] = [
     needs: [],
   },
   {
+    slug: "fantasy-rankings",
+    title: "Fantasy rankings",
+    summary: "Players ranked by fantasy points per game over the season.",
+    needs: [],
+  },
+  {
     slug: "fantasy-trends",
     title: "Fantasy points trends",
     summary: "Each player's latest rolling five-game fantasy average for 2026-27.",

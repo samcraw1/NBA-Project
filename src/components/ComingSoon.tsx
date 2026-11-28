@@ -5,10 +5,9 @@ export function ComingSoonBadge() {
 }
 
 export function ComingSoonCard({ feature }: { feature: AnalyticsFeature }) {
-  const available = feature.slug === "season-rankings" || feature.slug === "fantasy-trends";
+  const available = feature.needs.length === 0; // live pages have nothing left to build
   return (
     <a className={`soon-card${available ? " available-card" : ""}`} href={`#/analytics/${feature.slug}`}>
-      {!available && <ComingSoonBadge />}
       <h3>{feature.title}</h3>
       <p>{feature.summary}</p>
     </a>

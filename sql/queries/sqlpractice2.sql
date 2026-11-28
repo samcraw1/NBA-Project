@@ -1,14 +1,17 @@
-with team_game_points as (
-    select t.team_id, t.full_name, g.game_id, sum(pgs.pts) as team_points
-from teams as t
-join player_game_stats as pgs on pgs.team_id = t.team_id
+with player_season_fantasy as (
+    select p.player_id, p.full_name, g.season, avg(pgs.fantasy_pts) as avg_fantasy_pts,
+from players as p
+join player_game_stats as pgs on pgs.player_id = p.player_id
 join games as g on g.game_id = pgs.game_id
-group by t.team_id,t.full_name, g.game_id
+group by p.player_id, p.full_name, g.season
 )
 select 
-    tgp.team_id,
-    tgp.full_name,
-    avg(team_points)
-from team_game_points as tgp
-group by tgp.team_id, tgp.full_name;
-
+    player_id,
+    full_name,
+    season,
+    avg_fantasy_pts,
+rank() over (
+    partition by season 
+    order by avg_fantasy_pts desc
+    ) as fantasy_rank
+from player_season_fantasy;
